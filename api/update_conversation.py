@@ -10,7 +10,9 @@ def _get_system_prompt(conversation_id):
 def update_conversation(query):
     conversation_id = query["id"]
     messages = db.get_messages_by_conversation_id(conversation_id)
-    answer = gpt.get_next_message(messages, _get_system_prompt(conversation_id))
-    answer["conversationId"] = conversation_id
-    db.insert_message(answer)
+    if messages[-1]["role"] == "user":
+        answer = gpt.get_next_message(messages, _get_system_prompt(conversation_id))
+        answer["conversationId"] = conversation_id
+        db.insert_message(answer)
+    db.set_conversation_done(conversation_id)
     return success

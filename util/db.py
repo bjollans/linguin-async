@@ -24,6 +24,14 @@ def get_conversation_by_id(conversation_id):
     .execute()
     return response.data
 
+def set_conversation_done(conversation_id):
+    response = supabase \
+    .table('conversations') \
+    .update({"status": "done"}) \
+    .eq("id", conversation_id) \
+    .execute()
+    return response.data
+
 def insert_message(message):
     response = supabase \
     .table('messages') \
