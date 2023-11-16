@@ -1,5 +1,7 @@
 import json
+from api.update_conversation import update_conversation
 from util.dummy import hello_world
+import sys
 
 required_args = ['type']
 
@@ -21,19 +23,21 @@ def lambda_handler(event, context):
         }
 
     match query['type'] if 'type' in query else None:
+        case 'update_conversation':
+            return update_conversation(query)
         case _:
-            response_body = hello_world()
-
-    return {
-        'statusCode': 200,
-        'body': json.dumps(response_body)
-    }
+            return {
+                'statusCode': 400,
+                'body': json.dumps("empty")
+            }
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
     args = sys.argv
 
-    event = {'queryStringParameters': {'type': 'test'}}
+    event = {'queryStringParameters': {'type': 'update_conversation', 'id': '798e9ce7-f320-4dcb-9809-c8938c5ad127'}}
     context = {}
 
     print(lambda_handler(event, context)['body'])
