@@ -36,6 +36,7 @@ def set_conversation_done(conversation_id):
 
 
 def insert_message(message):
+    #TODO: Make sure the message count has not changed, to avoid race conditions
     response = supabase \
         .table('messages') \
         .insert(message) \
