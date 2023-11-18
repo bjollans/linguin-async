@@ -1,4 +1,3 @@
-import json
 import util.db as db
 import util.gpt as gpt
 from api.common_responses import success

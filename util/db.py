@@ -41,3 +41,11 @@ def insert_message(message):
         .insert(message) \
         .execute()
     return response.data
+
+def list_pending_conversation_ids():
+    response = supabase \
+        .table('conversations') \
+        .select("id") \
+        .eq("status", "pending") \
+        .execute()
+    return response.data
