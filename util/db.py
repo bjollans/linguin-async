@@ -5,6 +5,22 @@ url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 supabase = create_client(url, key)
 
+def update_story(story):
+    response = supabase \
+        .table('stories') \
+        .update(story) \
+        .eq("id", story["id"]) \
+        .execute()
+    return response.data
+
+def get_story_by_id(story_id):
+    response = supabase \
+        .table('stories') \
+        .select("*") \
+        .eq("id", story_id) \
+        .single() \
+        .execute()
+    return response.data
 
 def get_messages_by_conversation_id(conversation_id):
     response = supabase \
