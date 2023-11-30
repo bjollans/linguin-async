@@ -6,8 +6,8 @@ from util.translation import translate_text
 from devatrans import DevaTrans
 
 class Term:
-    def __init__(self, term, position, translation=None, transliteration=None):
-        self.term = term
+    def __init__(self, text, position, translation=None, transliteration=None):
+        self.text = text
         self.position = position
         self.translation = translation
         self.transliteration = transliteration
@@ -25,21 +25,15 @@ def _term_str_to_terms(text: str, term_strs: list[str]) -> list[Term]:
         position = text_copy.find(term_str)
         length = len(term_str)
         text_copy = text_copy.replace(term_str, "."*length, 1)
-        terms.append(Term(term=term_str, position=position))
+        terms.append(Term(text=term_str, position=position))
     return terms
 
 
-def get_sentences(text, source_lang):
-    separator = "."
-    if source_lang == "zh":
-        separator = "。"
-    if source_lang == "ja":
-        separator = "。"
-    if source_lang == "hi":
-        separator = "।"
-    sentence_strs = text.split(separator)
-    sentence_strs = [s.strip() for s in sentence_strs if s.strip()]
-    return _term_str_to_terms(text, sentence_strs)
+def get_sentences(text):
+    sentence_strs = text.split("\n")
+    sentence_strs = [s.strip() for s in sentence_strs]
+    sentences: list(Term) = [Term(text=s, position=sentence_strs.index(s)) for s in sentence_strs if len(s) > 0]
+    return sentences
 
 def get_indic_transliteration(text):
     dt = DevaTrans()
@@ -48,7 +42,7 @@ def get_indic_transliteration(text):
 
 def transliterate_term(term: Term, from_lang: str):
     if from_lang == "hi":
-        term.transliteration = get_indic_transliteration(term.term)
+        term.transliteration = get_indic_transliteration(term.text)
 
 
 def transliterate_terms(terms: list[Term], from_lang: str):
@@ -56,7 +50,7 @@ def transliterate_terms(terms: list[Term], from_lang: str):
         transliterate_term(term, from_lang)
 
 def translate_term(term: Term, from_lang: str, to_lang: str):
-    term.translation = translate_text(term.term, from_lang, to_lang)
+    term.translation = translate_text(term.text, from_lang, to_lang)
 
 
 def translate_terms(terms: list[Term], from_lang: str, to_lang: str):
@@ -65,8 +59,8 @@ def translate_terms(terms: list[Term], from_lang: str, to_lang: str):
 
 
 def get_translation_json(text, from_lang, to_lang) -> dict:
+    sentences: list[Term] = get_sentences(text)
     word_groups: list[Term] = get_word_groups(text)
-    sentences: list[Term] = get_sentences(text, from_lang)
 
     translate_terms(word_groups, from_lang, to_lang)
     translate_terms(sentences, from_lang, to_lang)
