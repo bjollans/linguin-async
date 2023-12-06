@@ -1,6 +1,5 @@
 from pydub.utils import mediainfo
 from pydub import AudioSegment
-import json
 
 def get_time_stamps(files):
     print(f"Getting time stamps for {files}")
@@ -15,7 +14,7 @@ def get_time_stamps(files):
         result.append({"start": current_start, "end": current_end})
         current_start = current_end
 
-    return json.dumps(result)
+    return result
 
 
 def concatenate_and_save_mp3(files, output_file):

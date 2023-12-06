@@ -5,6 +5,11 @@ url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 supabase = create_client(url, key)
 
+def upload_audio_to_bucket(filepath, path_on_bucket, bucket="storySound"):
+    with open(filepath, 'rb') as f:
+        supabase.storage.from_(bucket).upload(file=f,path=path_on_bucket, file_options={"content-type": "audio/mpeg"})
+    return f"{url}/storage/v1/object/public/{bucket}/{path_on_bucket}"
+
 def update_story(story):
     response = supabase \
         .table('stories') \
