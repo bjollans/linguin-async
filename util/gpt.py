@@ -11,7 +11,7 @@ def get_next_message(messages, system_prompt):
     return {key: chat_completion.choices[0].message.__dict__[key] for key in ["content", "role"]}
 
 def text_to_word_groups(sentence) -> list[str]:
-    split_prompt = "Please mark the word boundaries in the following with a \"|\". Dont split word groups. Remove all punctuation: "
+    split_prompt = "Please mark the word boundaries in the following with a \"|\". Dont split word groups. Remove all punctuation, new lines and quotation. Remove all characters that are not letters: "
     chat_completion = client.chat.completions.create( \
         model="gpt-4-1106-preview", \
         messages=[{"role": "user", "content": split_prompt + sentence}], \
