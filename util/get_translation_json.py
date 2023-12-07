@@ -1,9 +1,12 @@
 from collections import namedtuple
-from util.gpt import text_to_word_groups
+import util.gpt as gpt
 
 from util.translation import translate_text
 
 from devatrans import DevaTrans
+from util.vocab_db import VocabDB
+
+from util.word_splitter import WordSplitter
 
 class Term:
     def __init__(self, text, position, translation=None, transliteration=None):
@@ -13,8 +16,16 @@ class Term:
         self.transliteration = transliteration
 
 
-def get_word_groups(text) -> list[Term]:
-    word_groups: list[str] = text_to_word_groups(text)
+def get_and_update_word_splits(text, from_lang):
+    w = WordSplitter(from_lang)
+    vdb = VocabDB(from_lang)
+    word_groups = w.split_text_into_word_groups(text)
+    vdb.write_words(word_groups)
+    return word_groups
+
+
+def get_word_groups(text, from_lang) -> list[Term]:
+    word_groups: list[str] = get_and_update_word_splits(text, from_lang)
     return _term_str_to_terms(text, word_groups)
 
 
@@ -50,7 +61,12 @@ def transliterate_terms(terms: list[Term], from_lang: str):
         transliterate_term(term, from_lang)
 
 def translate_term(term: Term, from_lang: str, to_lang: str):
-    term.translation = translate_text(term.text, from_lang, to_lang)
+    vdb = VocabDB(from_lang)
+    if vdb.has(term.text):
+        term.translation = vdb.get_translation(term.text, to_lang)
+    if not term.translation:
+        term.translation = translate_text(term.text, from_lang, to_lang)
+        vdb.write_translation(term.text, to_lang, term.translation)
 
 
 def translate_terms(terms: list[Term], from_lang: str, to_lang: str):
@@ -58,12 +74,19 @@ def translate_terms(terms: list[Term], from_lang: str, to_lang: str):
         translate_term(term, from_lang, to_lang)
 
 
+def translate_sentences(terms: list[Term], from_lang: str, to_lang: str):
+    for term in terms:
+        term.translation = translate_text(term.text, from_lang, to_lang)
+
+
 def get_translation_json(text, from_lang, to_lang) -> dict:
     sentences: list[Term] = get_sentences(text)
-    word_groups: list[Term] = get_word_groups(text)
+    word_groups: list[Term] = []
+    for sentence in sentences:
+        word_groups += get_word_groups(sentence.text, from_lang)
 
     translate_terms(word_groups, from_lang, to_lang)
-    translate_terms(sentences, from_lang, to_lang)
+    translate_sentences(sentences, from_lang, to_lang)
 
     transliterate_terms(word_groups, from_lang)
     transliterate_terms(sentences, from_lang)
