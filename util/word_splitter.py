@@ -30,7 +30,7 @@ class WordSplitter:
     def split_text_into_word_groups(self, text):
         words: list[str] = self.split_text_into_words(text)
         word_groups: list[str] = []
-        max_word_group_len = 4
+        max_word_group_len = 5
         i=0
         while i < len(words):
             for j in range(max_word_group_len, 0, -1):
