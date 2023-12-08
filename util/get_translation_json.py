@@ -81,9 +81,10 @@ def translate_sentences(terms: list[Term], from_lang: str, to_lang: str):
 
 def get_translation_json(text, from_lang, to_lang) -> dict:
     sentences: list[Term] = get_sentences(text)
-    word_groups: list[Term] = []
+    word_group_strs: list[str] = []
     for sentence in sentences:
-        word_groups += get_word_groups(sentence.text, from_lang)
+        word_group_strs += get_and_update_word_splits(sentence.text, from_lang)
+    word_groups: list[Term] = _term_str_to_terms(text, word_group_strs)
 
     translate_terms(word_groups, from_lang, to_lang)
     translate_sentences(sentences, from_lang, to_lang)
