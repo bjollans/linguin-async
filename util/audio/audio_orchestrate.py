@@ -13,7 +13,7 @@ def _text_to_audio_with_sentence_timestamps(text, lang, output_file):
 def generate_audio_for_story(story_id):
     story = db.get_story_by_id(story_id)
     text = story["content"]
-    lang = story["targetLang"]
+    lang = story["targetLanguage"]
     title = story["title"]
 
     audio_file = f"/tmp/{title}.mp3"
