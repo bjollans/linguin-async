@@ -1,5 +1,7 @@
 import boto3
-from util.translation import translate_text
+
+_get_cache = {}
+_has_cache = []
 
 
 class VocabDB:
@@ -12,24 +14,27 @@ class VocabDB:
         self.db = boto3.resource(
             'dynamodb', region_name=self.REGION).Table(self.table_name)
 
-    _get_cache = {}
     def _get(self, word):
-        if word not in self._get_cache: 
+        if word not in _get_cache:
             response = self.db.get_item(Key={'word': word})
             if not 'Item' in response:
                 return None
-            self._get_cache[word] = response['Item']
-        return self._get_cache[word]
-    
+            _get_cache[word] = response['Item']
+        return _get_cache[word]
+
     def get_translation(self, word, to_lang):
         item = self._get(word)
         return item[to_lang] if to_lang in item else None
 
-    _has_cache = []
+    def get_infinitive(self, word):
+        item = self._get(word)
+        return item["infinitive"] if "infinitive" in item else None
+
     def has(self, word):
-        if word in self._has_cache: return True
+        if word in _has_cache:
+            return True
         if self._get(word):
-            self._has_cache.append(word)
+            _has_cache.append(word)
             return True
         return False
 
@@ -41,12 +46,13 @@ class VocabDB:
         if not self.has(word):
             self.db.put_item(Item={'word': word})
 
-    def write_translation(self, word, to_lang, translation):
+    def write_translation(self, word, to_lang, translation, infinitive):
         if not self.has(word):
             self.write_word(word)
         item = self._get(word)
 
         item[to_lang] = translation
+        item["infinitive"] = infinitive
 
-        self._get_cache[word] = item
+        _get_cache[word] = item
         self.db.put_item(Item=item)
