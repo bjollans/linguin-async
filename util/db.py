@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from supabase import create_client, Client
 
 url = os.environ.get("SUPABASE_URL")
@@ -24,6 +26,22 @@ def get_story_by_id(story_id):
         .select("*") \
         .eq("id", story_id) \
         .single() \
+        .execute()
+    return response.data
+
+def get_stories_without_content():
+    response = supabase \
+        .table('stories') \
+        .select("id") \
+        .is_("content", "null") \
+        .execute()
+    return response.data
+
+def get_stories_without_audio():
+    response = supabase \
+        .table('stories') \
+        .select("id") \
+        .is_("audioUrl", "null") \
         .execute()
     return response.data
 
@@ -71,3 +89,7 @@ def list_pending_conversation_ids():
         .eq("status", "pending") \
         .execute()
     return response.data
+
+
+if __name__ == "__main__":
+    print(get_stories_without_audio())

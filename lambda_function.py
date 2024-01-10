@@ -1,13 +1,12 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from api import generate_audio
+from api.generate_audio import generate_audio, generate_audio_for_all_stories
 import json
 from api.update_conversation import update_conversation
 from api.update_conversations import update_conversations
-from api.translate_story import translate_story
+from api.translate_story import translate_story, translate_stories_without_content
 from util import db
-from util.audio.audio_orchestrate import generate_audio_for_story
 
 required_args = ['type']
 
@@ -37,6 +36,10 @@ def lambda_handler(event, context):
             return translate_story(query)
         case 'generate_audio':
             return generate_audio(query)
+        case 'translate_stories_without_content':
+            return translate_stories_without_content()
+        case 'generate_audio_for_all_stories':
+            return generate_audio_for_all_stories()
         case _:
             return {
                 'statusCode': 400,
@@ -45,4 +48,5 @@ def lambda_handler(event, context):
 
 
 if __name__ == "__main__":
-    translate_story({"id": "eeea7d5c-2b32-4372-829e-ffa8204e22dc"})
+    translate_stories_without_content()
+    generate_audio_for_all_stories()

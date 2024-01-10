@@ -93,7 +93,6 @@ def translate_term(term: Term, from_lang: str, to_lang: str, is_infinitive=False
                               term.translation,
                               term.infinitive)
     if term.infinitive != term.text and not is_infinitive:
-        print(f"Translating infinitive: {term.infinitive}; {term.text}")
         translate_term(Term(text=term.infinitive), from_lang,
                        to_lang, is_infinitive=True)
     term.infinitive_translation = vdb.get_translation(term.infinitive, to_lang)
