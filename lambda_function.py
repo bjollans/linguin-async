@@ -6,7 +6,7 @@ import json
 from api.update_conversation import update_conversation
 from api.update_conversations import update_conversations
 from api.translate_story import translate_story, translate_stories_without_content
-from util import db
+from api.generate_questions import generate_questions_for_all_stories
 
 required_args = ['type']
 
@@ -50,3 +50,4 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     translate_stories_without_content()
     generate_audio_for_all_stories()
+    generate_questions_for_all_stories()
