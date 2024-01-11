@@ -43,12 +43,12 @@ def get_stories_without_content():
     return response.data
 
 def get_stories_without_question():
-    all_stories = _get_all_stories()
+    all_stories = get_all_stories()
     story_ids_with_questions = _get_story_ids_with_questions()
     stories_without_questions = [story for story in all_stories if story["id"] not in story_ids_with_questions]
     return stories_without_questions
 
-def _get_all_stories():
+def get_all_stories():
     response = supabase \
         .table('stories') \
         .select("*") \
