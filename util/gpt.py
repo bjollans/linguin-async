@@ -42,10 +42,43 @@ Just return the plain JSON without formatting or backticks.
 Here is the text:
 """
 ''' + story + '\n"""'
+    return chat_completion([{"role": "user", "content": prompt}])
+
+
+def chat_completion(chat_json, temperature=1, model="gpt-4-1106-preview"):
     chat_completion = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        temperature=0,
-        messages=[{"role": "user", "content": prompt}],
+        model=model,
+        temperature=temperature,
+        messages=chat_json,
     )
-    return json.loads(chat_completion.choices[0].message.content)
-    
+    return chat_completion.choices[0].message.content
+
+
+def chain_of_thought(prompts: list[str]) -> str:
+    answers = []
+    for i, _ in enumerate(prompts):
+        prompts_to_use = [{"role": "user", "content": prompt}
+                          for prompt in prompts[:i+1]]
+        answers_to_use = [{"role": "assistant", "content": answer}
+                          for answer in answers[:i]]
+
+        chat_history = [val for pair in zip(
+            prompts_to_use, answers_to_use) for val in pair] + [prompts_to_use[-1]]
+        answers.append(chat_completion(chat_history, model='gpt-3.5-turbo'))
+    return answers[-1]
+
+
+def generate_non_fiction_story(topic, paragraph_count=3):
+    return chain_of_thought([
+        f"What do you know about {topic}. Give me {paragraph_count} paragraphs:",
+        "Simplify the language and use more common words.",
+        "Put every sentence in a new line.",
+    ])
+
+
+def generate_known_fiction_story(title, paragraph_count=3):
+    return chain_of_thought([
+        f'Tell me the story "{title}" in {paragraph_count} paragraphs:',
+        "Simplify the language and use more common words.",
+        "Put every sentence in a new line.",
+    ])
