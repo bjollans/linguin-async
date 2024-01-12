@@ -61,6 +61,36 @@ def _get_story_ids_with_questions():
                       .execute()
     return list(set([x["storyId"] for x in response.data]))
 
+def _get_story_ids_read_by_user(user_id):
+    response = supabase \
+        .table('userStoriesRead') \
+        .select("storyId") \
+        .eq("userId", user_id) \
+        .execute()
+    return list(set([x["storyId"] for x in response.data]))
+
+
+def get_stories_read_by_user(user_id):
+    story_ids = _get_story_ids_read_by_user(user_id)
+    stories = []
+    for story_id in story_ids:
+        stories.append(get_story_by_id(story_id))
+    return stories
+
+def get_users_who_have_read_any_story():
+    response = supabase \
+        .table('userStoriesRead') \
+        .select("userId") \
+        .execute()
+    return list(set([x["userId"] for x in response.data]))
+
+def upsert_user_read_statistics(user_id, word_list):
+    response = supabase \
+        .table('userReadStatistics') \
+        .upsert({"userId": user_id, "wordsSeen": word_list}) \
+        .execute()
+    return response.data
+
 
 def insert_questions(questions):
     response = supabase \
