@@ -40,4 +40,4 @@ class WordSplitter:
                     i+=j-1
                     break
             i+=1
-        return [w for w in word_groups if w != ""]
+        return [w.strip() for w in word_groups if len(w.strip()) > 0]

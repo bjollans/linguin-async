@@ -16,6 +16,8 @@ class VocabDB:
 
     def _get(self, word):
         if word not in _get_cache:
+            if len(word) == 0:
+                return None
             response = self.db.get_item(Key={'word': word})
             if not 'Item' in response:
                 return None
