@@ -12,14 +12,14 @@ def translate_story(query):
     translation_json = get_translation_json(story["content"], story["targetLanguage"], story["translationLanguage"])
     story["translationJson"] = translation_json
     story["wordCount"] = len(story["content"].split(" "))
-    story["imageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{story['title']}.png"
-    story["previewImageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{story['title']}_preview.png"
+    story["imageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{story['title']}.gif"
+    story["previewImageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{story['title']}_preview.gif"
     story["wordsInStory"] = get_word_list_from_translation_json(translation_json)
     db.update_story(story)
     return success
 
 def translate_stories_without_content():
-    stories = db.get_stories_without_content()
+    stories = db.get_stories_done_without_content()
     for i, story in enumerate(stories):
         print(f"Translating {story['id']}; {i+1}/{len(stories)}")
         translate_story({"id": story["id"]})

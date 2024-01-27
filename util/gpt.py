@@ -1,4 +1,5 @@
 import json
+import random
 from openai import OpenAI
 
 client = OpenAI()
@@ -42,7 +43,7 @@ Just return the plain JSON without formatting or backticks.
 Here is the text:
 """
 ''' + story + '\n"""'
-    return chat_completion([{"role": "user", "content": prompt}])
+    return json.loads(chat_completion([{"role": "user", "content": prompt}]))
 
 
 def chat_completion(chat_json, temperature=1, model="gpt-4-1106-preview"):
@@ -57,6 +58,7 @@ def chat_completion(chat_json, temperature=1, model="gpt-4-1106-preview"):
 def chain_of_thought(prompts: list[str]) -> str:
     answers = []
     for i, _ in enumerate(prompts):
+        print(f"Chain of thought: {i+1}/{len(prompts)}")
         prompts_to_use = [{"role": "user", "content": prompt}
                           for prompt in prompts[:i+1]]
         answers_to_use = [{"role": "assistant", "content": answer}
@@ -64,7 +66,8 @@ def chain_of_thought(prompts: list[str]) -> str:
 
         chat_history = [val for pair in zip(
             prompts_to_use, answers_to_use) for val in pair] + [prompts_to_use[-1]]
-        answers.append(chat_completion(chat_history, model='gpt-3.5-turbo'))
+        answers.append(chat_completion(
+            chat_history, model='gpt-4-1106-preview'))
     return answers[-1]
 
 
@@ -82,3 +85,58 @@ def generate_known_fiction_story(title, paragraph_count=3):
         "Simplify the language and use more common words.",
         "Put every sentence in a new line.",
     ])
+
+def chain_of_thought_with_image(prompts: list[str], image_url) -> str:
+    answers = [react_to_image(prompts[0], image_url)]
+    for i, _ in enumerate(prompts):
+        if i==0: continue
+        print(f"Chain of thought: {i+1}/{len(prompts)}")
+        prompts_to_use = [{"role": "user", "content": prompt}
+                          for prompt in prompts[:i+1]]
+        answers_to_use = [{"role": "assistant", "content": answer}
+                          for answer in answers[:i]]
+
+        chat_history = [val for pair in zip(
+            prompts_to_use, answers_to_use) for val in pair] + [prompts_to_use[-1]]
+        answers.append(chat_completion(
+            chat_history, model='gpt-4-1106-preview'))
+    return answers[-1]
+
+
+def react_to_image(text, image_url):
+    chat_completion = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        temperature=1,
+        max_tokens=1024,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": text},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_url,
+                        },
+                    },
+                ],
+            }
+        ],
+    )
+    return chat_completion.choices[0].message.content
+
+def generate_mini_story():
+    img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{random.randint(0,80)}.jpeg'
+    prompt = 'Write me a short story (and title) based on this picture in json format as `{"title":"...","story":"..."}`. Just return the plain JSON without formatting or backticks. The story should be for an A1 English learner. It should be around 2 paragraphs long. It should be set in India, but do not mention "India" or elude to it in the story. Write the story using the Heros Journey structure. Start with the hero in a normal setting, introduce a challenge that leads them on an adventure. Have them face obstacles, receive help from a mentor, and overcome a major crisis. Conclude with the hero returning transformed, bringing back something valuable to their original home. Do not use words like "Hero" or "Quest". The setting should be general day to day and not epic.'
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    # chain_of_thought_with_image...
+    return react_to_image(prompt, img_url)
