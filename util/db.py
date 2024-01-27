@@ -15,6 +15,14 @@ def upload_audio_to_bucket(filepath, path_on_bucket, bucket="storySound"):
     return f"{url}/storage/v1/object/public/{bucket}/{path_on_bucket}"
 
 
+def file_exists(path_on_bucket, bucket):
+    try:
+        supabase.storage.from_(bucket).download(path_on_bucket)
+        return True
+    except:
+        return False
+
+
 def update_story(story):
     response = supabase \
         .table('stories') \
@@ -34,6 +42,16 @@ def get_story_by_id(story_id):
     return response.data
 
 
+def get_story_by_title(title):
+    response = supabase \
+        .table('stories') \
+        .select("*") \
+        .eq("title", title) \
+        .single() \
+        .execute()
+    return response.data
+
+
 def get_stories_without_content():
     response = supabase \
         .table('stories') \
@@ -42,11 +60,24 @@ def get_stories_without_content():
         .execute()
     return response.data
 
+
+def get_stories_done_without_content():
+    response = supabase \
+        .table('stories') \
+        .select("id") \
+        .is_("content", "null") \
+        .eq("status", "Done") \
+        .execute()
+    return response.data
+
+
 def get_stories_without_question():
-    all_stories = get_all_stories()
+    all_stories = get_all_stories_with_content()
     story_ids_with_questions = _get_story_ids_with_questions()
-    stories_without_questions = [story for story in all_stories if story["id"] not in story_ids_with_questions]
+    stories_without_questions = [
+        story for story in all_stories if story["id"] not in story_ids_with_questions]
     return stories_without_questions
+
 
 def get_all_stories():
     response = supabase \
@@ -55,11 +86,21 @@ def get_all_stories():
         .execute()
     return response.data
 
+def get_all_stories_with_content():
+    response = supabase \
+        .table('stories') \
+        .select("*") \
+        .not_.is_("content", "null") \
+        .execute()
+    return response.data
+
+
 def _get_story_ids_with_questions():
     response = supabase.table('storyQuestions') \
-                      .select('storyId') \
-                      .execute()
+        .select('storyId') \
+        .execute()
     return list(set([x["storyId"] for x in response.data]))
+
 
 def _get_story_ids_read_by_user(user_id):
     response = supabase \
@@ -77,12 +118,14 @@ def get_stories_read_by_user(user_id):
         stories.append(get_story_by_id(story_id))
     return stories
 
+
 def get_users_who_have_read_any_story():
     response = supabase \
         .table('userStoriesRead') \
         .select("userId") \
         .execute()
     return list(set([x["userId"] for x in response.data]))
+
 
 def upsert_user_read_statistics(user_id, word_list):
     response = supabase \
@@ -105,6 +148,7 @@ def get_stories_without_audio():
         .table('stories') \
         .select("id") \
         .is_("audioUrl", "null") \
+        .not_.is_("content", "null") \
         .execute()
     return response.data
 
@@ -152,6 +196,19 @@ def list_pending_conversation_ids():
         .table('conversations') \
         .select("id") \
         .eq("status", "pending") \
+        .execute()
+    return response.data
+
+
+def insert_story_content(title, content, difficulty, targetLanguage="hi"):
+    response = supabase \
+        .table('stories') \
+        .insert({"title": title,
+                 "en": content,
+                 "difficulty": difficulty,
+                 "translationLanguage": "en",
+                 "targetLanguage": targetLanguage,
+                 "status": "Content Review Pending"}) \
         .execute()
     return response.data
 

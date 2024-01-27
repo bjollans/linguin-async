@@ -1,4 +1,4 @@
-from util.audio.audio_orchestrate import generate_audio_for_story
+from util.audio.audio_orchestrate import generate_audio_for_story, generate_audio_for_words_by_translation_json
 from api.common_responses import success
 import util.db as db
 
@@ -12,4 +12,9 @@ def generate_audio_for_all_stories():
     for i, story in enumerate(stories):
         print(f"Generating audio for {story['id']}; {i+1}/{len(stories)}")
         generate_audio({"id": story["id"]})
+    return success
+
+def generate_audio_for_all_words_in_story(query):
+    story_id = query["id"]
+    generate_audio_for_words_by_translation_json(story_id)
     return success
