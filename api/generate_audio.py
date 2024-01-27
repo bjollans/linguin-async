@@ -11,7 +11,10 @@ def generate_audio_for_all_stories():
     stories = db.get_stories_without_audio()
     for i, story in enumerate(stories):
         print(f"Generating audio for {story['id']}; {i+1}/{len(stories)}")
-        generate_audio({"id": story["id"]})
+        query = {"id": story["id"]}
+        generate_audio(query)
+        print(f"Generated for words in {story['id']}; {i+1}/{len(stories)}")
+        generate_audio_for_words_by_translation_json(query)
     return success
 
 def generate_audio_for_all_words_in_story(query):
