@@ -12,15 +12,15 @@ def generate_audio_for_text(text, lang, output_file_prefix):
     for i, sentence in enumerate(sentences):
         output_file = f"/tmp/{output_file_prefix}_{i}.mp3"
         output_files.append(output_file)
-        generate_audio_for_sentence(sentence, lang, output_file)
+        generate_audio_for_sentence(sentence, lang, output_file, speed="slow")
     return output_files
 
-def generate_audio_for_sentence(text, lang, output_file):
+def generate_audio_for_sentence(text, lang, output_file, speed="normal"):
     print(f"Generating audio for {text} in {lang} and saving to {output_file}")
     if lang not in lang_to_voice:
         raise Exception(f"Language {lang} not supported")
     
-    voice_speed = "slow"
+    voice_speed = speed
     file_format = "mp3"
     apikey = os.environ["NARAKEET_API_KEY"]
     voice = lang_to_voice[lang]
