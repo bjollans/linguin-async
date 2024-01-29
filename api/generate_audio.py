@@ -14,7 +14,7 @@ def generate_audio_for_all_stories():
         query = {"id": story["id"]}
         generate_audio(query)
         print(f"Generated for words in {story['id']}; {i+1}/{len(stories)}")
-        generate_audio_for_words_by_translation_json(query)
+        generate_audio_for_words_by_translation_json(story["id"])
     return success
 
 def generate_audio_for_all_words_in_story(query):
