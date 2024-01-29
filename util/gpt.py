@@ -2,6 +2,8 @@ import json
 import random
 from openai import OpenAI
 
+from util.db import get_texts_stories_in_collection
+
 client = OpenAI()
 
 
@@ -44,6 +46,15 @@ Here is the text:
 """
 ''' + story + '\n"""'
     return json.loads(chat_completion([{"role": "user", "content": prompt}]))
+
+
+def single_chat_completion(prompt, temperature=1, model="gpt-4-1106-preview"):
+    chat_completion = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return chat_completion.choices[0].message.content
 
 
 def chat_completion(chat_json, temperature=1, model="gpt-4-1106-preview"):
@@ -140,3 +151,12 @@ def generate_mini_story():
     # chain_of_thought_with_image...
     # chain_of_thought_with_image...
     return react_to_image(prompt, img_url)
+
+def generate_ideas_for_collections(collectionNames, limit=10):
+    stories_json = []
+    for collectionName in collectionNames:
+        stories_json += get_texts_stories_in_collection(collectionName, limit=limit)
+    random.shuffle(stories_json)
+    stories_json = stories_json[:limit]
+    prompt = f'Give me another row for this json. Just give me the new row as plain json without formatting: {stories_json}'
+    return single_chat_completion(prompt)

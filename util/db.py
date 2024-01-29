@@ -42,6 +42,16 @@ def get_story_by_id(story_id):
     return response.data
 
 
+def get_stories_by_ids(story_ids, columns='*', limit=10):
+    response = supabase \
+        .table('stories') \
+        .select(columns) \
+        .in_("id", story_ids) \
+        .limit(limit) \
+        .execute()
+    return response.data
+
+
 def get_story_by_title(title):
     response = supabase \
         .table('stories') \
@@ -51,6 +61,23 @@ def get_story_by_title(title):
         .execute()
     return response.data
 
+
+def get_stories_by_status(status):
+    response = supabase \
+        .table('stories') \
+        .select("*") \
+        .eq("status", status) \
+        .execute()
+    return response.data
+
+
+def set_story_status(story_id, status):
+    response = supabase \
+        .table('stories') \
+        .update({"status": status}) \
+        .eq("id", story_id) \
+        .execute()
+    return response.data
 
 def get_stories_without_content():
     response = supabase \
@@ -211,6 +238,28 @@ def insert_story_content(title, content, difficulty, targetLanguage="hi"):
                  "status": "Content Review Pending"}) \
         .execute()
     return response.data
+
+
+def get_collection_names_for_story_id(storyId):
+    response = supabase \
+        .table('storiesToCollections') \
+        .select("collectionName") \
+        .eq("storyId", storyId) \
+        .execute()
+    return response.data
+
+def get_story_ids_for_collection_name(collectionName):
+    response = supabase \
+        .table('storiesToCollections') \
+        .select("storyId") \
+        .eq("collectionName", collectionName) \
+        .execute()
+    return response.data
+
+def get_texts_stories_in_collection(collectionName, limit=10):
+    storyIds = [obj["storyId"] for obj in get_story_ids_for_collection_name(collectionName)]
+    stories = get_stories_by_ids(storyIds, columns="title, en, difficulty", limit=limit)
+    return stories
 
 
 if __name__ == "__main__":
