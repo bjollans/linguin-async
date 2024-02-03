@@ -12,8 +12,9 @@ def translate_story(query):
     translation_json = get_translation_json(story["content"], story["targetLanguage"], story["translationLanguage"])
     story["translationJson"] = translation_json
     story["wordCount"] = len(story["content"].split(" "))
-    story["imageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{story['title']}.gif"
-    story["previewImageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{story['title']}_preview.gif"
+    image_title = story["title"].replace("'","")
+    story["imageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{image_title}.gif"
+    story["previewImageUrl"] = f"https://backend.linguin.co/storage/v1/object/public/storyImages/{image_title}_preview.gif"
     story["wordsInStory"] = get_word_list_from_translation_json(translation_json)
     db.update_story(story)
     return success
