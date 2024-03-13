@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from devatrans import DevaTrans
 
-import util.gpt as gpt
+import util.gpt.word_operations as gpt
 from util.translation import translate_text
 from util.vocab_db import VocabDB
 from util.word_splitter import WordSplitter

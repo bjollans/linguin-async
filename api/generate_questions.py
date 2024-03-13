@@ -1,11 +1,11 @@
-from util import gpt
 from api.common_responses import success
 import util.db as db
+from util.gpt.question_generation import get_questions_for_story
 
 def generate_questions(query):
     story_id = query["id"]
     story_content = query["content"]
-    question_json = gpt.get_questions_for_story(story_content)
+    question_json = get_questions_for_story(story_content)
     for question in question_json:
         question["storyId"] = story_id
     db.insert_questions(question_json)

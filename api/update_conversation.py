@@ -1,5 +1,5 @@
 import util.db as db
-import util.gpt as gpt
+import util.gpt.gpt as gpt
 from api.common_responses import success
 
 

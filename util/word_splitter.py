@@ -1,5 +1,5 @@
 import unicodedata
-from util import gpt
+from util.gpt.word_operations import text_to_word_groups
 from util.vocab_db import VocabDB
 
 
@@ -15,7 +15,7 @@ class WordSplitter:
     
     def split_text_into_words(self, text) -> list[str]:
         if self.from_lang == "ja" or self.from_lang == "zh":
-            words: list[str] = gpt.text_to_word_groups(text)
+            words: list[str] = text_to_word_groups(text)
         else:
             words: list[str] = text.split(" ")
         return [WordSplitter._remove_non_letters(word) for word in words]

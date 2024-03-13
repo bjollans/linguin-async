@@ -2,7 +2,7 @@ import random
 from util.dalle3 import get_img_url_fiction, get_img_url_non_fiction
 from util.db import get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status
 from util.file_utils import download_image_from_url
-from util.gpt import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_non_fiction_story, react_to_image
+from util.gpt.story_generation import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_non_fiction_story
 import json
 
 
