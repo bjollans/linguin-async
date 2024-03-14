@@ -15,17 +15,11 @@ class Term:
                  position=-1,
                  translation=None,
                  transliteration=None,
-                 infinitive=None,
-                 infinitive_translation=None,
-                 infinitive_transliteration=None,
                  ):
         self.text = text
         self.position = position
         self.translation = translation
         self.transliteration = transliteration
-        self.infinitive = infinitive
-        self.infinitive_translation = infinitive_translation
-        self.infinitive_transliteration = infinitive_transliteration
 
 
 def get_and_update_word_splits(text, from_lang):
@@ -63,9 +57,6 @@ def get_sentences(text):
 def transliterate_term(term: Term, from_lang: str):
     if from_lang == "hi":
         term.transliteration = get_indic_transliteration(term.text)
-        if term.infinitive:
-            term.infinitive_transliteration = get_indic_transliteration(
-                term.infinitive)
 
 
 def transliterate_terms(terms: list[Term], from_lang: str):
@@ -73,25 +64,15 @@ def transliterate_terms(terms: list[Term], from_lang: str):
         transliterate_term(term, from_lang)
 
 
-def translate_term(term: Term, from_lang: str, to_lang: str, is_infinitive=False):
+def translate_term(term: Term, from_lang: str, to_lang: str):
     vdb = VocabDB(from_lang)
     if vdb.has(term.text):
         term.translation = vdb.get_translation(term.text, to_lang)
-        term.infinitive = vdb.get_infinitive(term.text)
-    if not term.translation or not term.infinitive:
-        if not term.translation:
-            term.translation = translate_text(term.text, from_lang, to_lang)
-        if not term.infinitive:
-            term.infinitive = gpt.get_infinitive(
-                term.text) if not is_infinitive else term.text
+    if not term.translation:
+        term.translation = translate_text(term.text, from_lang, to_lang)
         vdb.write_translation(term.text,
                               to_lang,
-                              term.translation,
-                              term.infinitive)
-    if term.infinitive != term.text and not is_infinitive:
-        translate_term(Term(text=term.infinitive), from_lang,
-                       to_lang, is_infinitive=True)
-    term.infinitive_translation = vdb.get_translation(term.infinitive, to_lang)
+                              term.translation)
 
 
 def translate_terms(terms: list[Term], from_lang: str, to_lang: str):

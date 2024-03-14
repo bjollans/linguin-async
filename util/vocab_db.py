@@ -28,10 +28,6 @@ class VocabDB:
         item = self._get(word)
         return item[to_lang] if to_lang in item else None
 
-    def get_infinitive(self, word):
-        item = self._get(word)
-        return item["infinitive"] if "infinitive" in item else None
-
     def has(self, word):
         if word in _has_cache:
             return True
@@ -48,13 +44,12 @@ class VocabDB:
         if not self.has(word):
             self.db.put_item(Item={'word': word})
 
-    def write_translation(self, word, to_lang, translation, infinitive):
+    def write_translation(self, word, to_lang, translation):
         if not self.has(word):
             self.write_word(word)
         item = self._get(word)
 
         item[to_lang] = translation
-        item["infinitive"] = infinitive
 
         _get_cache[word] = item
         self.db.put_item(Item=item)
