@@ -2,13 +2,14 @@ from util.get_translation_json import get_translation_json
 import util.db as db
 from api.common_responses import success
 from util.get_word_list import get_word_list_from_translation_json
-from util.translation import translate_text
+from util.translation import proof_read_translation, translate_text
 
 def translate_story(query):
     story_id = query["id"]
     story = db.get_story_by_id(story_id)
     if story["en"]:
-        story["content"] = translate_text(story["en"], "en", story["targetLanguage"])
+        translated_text = translate_text(story["en"], "en", story["targetLanguage"])
+        story["content"] = proof_read_translation(story["en"],translated_text, story["targetLanguage"])
     translation_json = get_translation_json(story["content"], story["targetLanguage"], story["translationLanguage"])
     story["translationJson"] = translation_json
     story["wordCount"] = len(story["content"].split(" "))

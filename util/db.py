@@ -10,8 +10,13 @@ supabase = create_client(url, key)
 
 def upload_audio_to_bucket(filepath, path_on_bucket, bucket="storySound"):
     with open(filepath, 'rb') as f:
-        supabase.storage.from_(bucket).upload(
-            file=f, path=path_on_bucket, file_options={"content-type": "audio/mpeg"})
+        # update if file already exists else upload
+        if file_exists(path_on_bucket, bucket):
+            supabase.storage.from_(bucket).update(
+                file=f, path=path_on_bucket, file_options={"content-type": "audio/mpeg"})
+        else:
+            supabase.storage.from_(bucket).upload(
+                file=f, path=path_on_bucket, file_options={"content-type": "audio/mpeg"})
     return f"{url}/storage/v1/object/public/{bucket}/{path_on_bucket}"
 
 
@@ -79,6 +84,7 @@ def set_story_status(story_id, status):
         .execute()
     return response.data
 
+
 def get_stories_without_content():
     response = supabase \
         .table('stories') \
@@ -112,6 +118,7 @@ def get_all_stories():
         .select("*") \
         .execute()
     return response.data
+
 
 def get_all_stories_with_content():
     response = supabase \
@@ -248,6 +255,7 @@ def get_collection_names_for_story_id(storyId):
         .execute()
     return response.data
 
+
 def get_story_ids_for_collection_name(collectionName):
     response = supabase \
         .table('storiesToCollections') \
@@ -256,9 +264,12 @@ def get_story_ids_for_collection_name(collectionName):
         .execute()
     return response.data
 
+
 def get_texts_stories_in_collection(collectionName, limit=10):
-    storyIds = [obj["storyId"] for obj in get_story_ids_for_collection_name(collectionName)]
-    stories = get_stories_by_ids(storyIds, columns="title, en, difficulty", limit=limit)
+    storyIds = [obj["storyId"]
+                for obj in get_story_ids_for_collection_name(collectionName)]
+    stories = get_stories_by_ids(
+        storyIds, columns="title, en, difficulty", limit=limit)
     return stories
 
 
