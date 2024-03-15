@@ -6,7 +6,7 @@ from util.gpt.story_generation import generate_ideas_for_collections, generate_k
 import json
 
 
-def generate_one_round_of_content(round_size=5):
+def generate_one_round_of_content(language, round_size=5):
     print(f"Generating content for {round_size} rounds")
     for i in range(round_size):
         print(f"Generating content for round {i+1}/{round_size}")
@@ -15,13 +15,13 @@ def generate_one_round_of_content(round_size=5):
         print(f"Generating fiction content")
         generate_content_from_collection_name(["Stories"])
         print(f"Generating mini story")
-        generate_and_save_mini_story()
+        generate_and_save_mini_story(language)
 
 
-def generate_and_save_mini_story():
+def generate_and_save_mini_story(language):
     try:
-        story = json.loads(generate_mini_story())
-        insert_story_content(story["title"], story["en"], "Easy")
+        story = json.loads(generate_mini_story(language))
+        insert_story_content(story["title"], story["story"], "Easy", targetLanguage=language)
     except:
         print(f"Error generating mini story. Moving on. AI Output is not predictable.")
         return

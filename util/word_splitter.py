@@ -1,9 +1,11 @@
 import unicodedata
 from util.gpt.word_operations import text_to_word_groups
 from util.vocab_db import VocabDB
-
+import pykakasi
 
 class WordSplitter:
+    kks = pykakasi.kakasi()
+
     def __init__(self, from_lang) -> None:
         self.from_lang = from_lang
         self.vocab_db = VocabDB(from_lang)
@@ -14,8 +16,9 @@ class WordSplitter:
         return result
     
     def split_text_into_words(self, text) -> list[str]:
-        if self.from_lang == "ja" or self.from_lang == "zh":
-            words: list[str] = text_to_word_groups(text)
+        if self.from_lang == "ja":
+            kks_result = self.kks.convert(text)
+            words: list[str] = [x["orig"] for x in kks_result]
         else:
             words: list[str] = text.split(" ")
         return [WordSplitter._remove_non_letters(word) for word in words]

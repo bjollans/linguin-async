@@ -5,6 +5,7 @@ from devatrans import DevaTrans
 import util.gpt.word_operations as gpt
 from util.translation import translate_text
 from util.transliteration.hi import get_indic_transliteration
+from util.transliteration.ja import get_japanese_transliteration
 from util.vocab_db import VocabDB
 from util.word_splitter import WordSplitter
 
@@ -57,6 +58,8 @@ def get_sentences(text):
 def transliterate_term(term: Term, from_lang: str):
     if from_lang == "hi":
         term.transliteration = get_indic_transliteration(term.text)
+    if from_lang == "ja":
+        term.transliteration = get_japanese_transliteration(term.text)
 
 
 def transliterate_terms(terms: list[Term], from_lang: str):

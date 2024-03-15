@@ -4,9 +4,13 @@ from util.db import get_texts_stories_in_collection
 from util.gpt.gpt import chain_of_thought, react_to_image, single_chat_completion
 
 
-def generate_mini_story():
+def generate_mini_story(language):
+    language_to_country = {
+        "hi": "India",
+        "ja": "Japan",
+    }
     img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{random.randint(0,80)}.jpeg'
-    prompt = 'Write me a short story (and title) based on this picture in json format as `{"title":"...","story":"..."}`. Just return the plain JSON without formatting or backticks. The story should be for an A1 English learner. It should be around 2 paragraphs long. It should be set in India, but do not mention "India" or elude to it in the story. Write the story using the Heros Journey structure. Start with the hero in a normal setting, introduce a challenge that leads them on an adventure. Have them face obstacles, receive help from a mentor, and overcome a major crisis. Conclude with the hero returning transformed, bringing back something valuable to their original home. Do not use words like "Hero" or "Quest". The setting should be general day to day and not epic.'
+    prompt = 'Write me a short story (and title) based on this picture in json format as `{"title":"...","story":"..."}`. Just return the plain JSON without formatting or backticks. The story should be for an A1 English learner. It should be around 2 paragraphs long. '+f'It should be set in {language_to_country[language]}, but do not mention "{language_to_country[language]}" or elude to it in the story. Write the story using the Heros Journey structure. Start with the hero in a normal setting, introduce a challenge that leads them on an adventure. Have them face obstacles, receive help from a mentor, and overcome a major crisis. Conclude with the hero returning transformed, bringing back something valuable to their original home. Do not use words like "Hero" or "Quest". The setting should be general day to day and not epic. No new lines (or other control characters) outside of the story text.'
     return react_to_image(prompt, img_url)
 
 def generate_ideas_for_collections(collectionNames, limit=10):

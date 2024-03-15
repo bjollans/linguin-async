@@ -6,3 +6,4 @@ devatrans==5.0.1
 pydub==0.25.1
 ffmpeg==1.4
 requests==2.31.0
+pykakasi==2.2.1

@@ -29,6 +29,7 @@ def translate_text(text, from_lang, to_lang):
 def proof_read_translation(original_text, translated_text, to_lang):
     language_full_form = {
         "hi": "Hindi",
+        "ja": "Japanese",
     }
     prompt = f"""
 I have the following story:
