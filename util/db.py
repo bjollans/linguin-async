@@ -264,6 +264,14 @@ def get_story_ids_for_collection_name(collectionName):
         .execute()
     return response.data
 
+def get_story_titles_for_language(language):
+    response = supabase \
+        .table('stories') \
+        .select("title") \
+        .eq("targetLanguage", language) \
+        .execute()
+    return response.data
+
 
 def get_texts_stories_in_collection(collectionName, limit=10):
     storyIds = [obj["storyId"]

@@ -2,7 +2,7 @@ import random
 from util.dalle3 import get_img_url_fiction, get_img_url_non_fiction
 from util.db import get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status
 from util.file_utils import download_image_from_url
-from util.gpt.story_generation import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_non_fiction_story
+from util.gpt.story_generation import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_non_fiction_story
 import json
 
 
@@ -11,30 +11,42 @@ def generate_one_round_of_content(language, round_size=5):
     for i in range(round_size):
         print(f"Generating content for round {i+1}/{round_size}")
         print(f"Generating non-fiction content")
-        generate_content_from_collection_name(["History", "Culture", "Geography"], limit=50)
-        print(f"Generating fiction content")
-        generate_content_from_collection_name(["Stories"])
-        print(f"Generating mini story")
-        generate_and_save_mini_story(language)
+        generate_content_from_collection_name(["History", "Culture", "Geography"], limit=50, language=language, word_count=200)
+        generate_content_from_collection_name(["History", "Culture", "Geography"], limit=50, language=language, word_count=300)
+        print(f"Generating stories")
+        generate_and_save_mini_story_by_committee(language, word_count=200)
+        generate_and_save_mini_story_by_committee(language, word_count=200)
+        generate_and_save_mini_story_by_committee(language, word_count=300)
+        generate_and_save_mini_story_by_committee(language, word_count=300)
 
 
-def generate_and_save_mini_story(language):
+def generate_and_save_mini_story(language, word_count=200):
     try:
-        story = json.loads(generate_mini_story(language))
+        story = json.loads(generate_mini_story(language, word_count=word_count))
         insert_story_content(story["title"], story["story"], "Easy", targetLanguage=language)
-    except:
-        print(f"Error generating mini story. Moving on. AI Output is not predictable.")
+    except Exception as e:
+        print(f"Error generating mini story. Moving on. AI Output is not predictable. {e}")
         return
 
 
-def generate_content_from_collection_name(collection_names, limit=10):
+def generate_and_save_mini_story_by_committee(language, word_count=300):
+    try:
+        story = json.loads(generate_mini_story_by_committee(language, word_count=word_count))
+        insert_story_content(story["title"], story["story"], "Intermediate", targetLanguage=language)
+    except Exception as e:
+        print(f"Error generating mini story. Moving on. AI Output is not predictable. {e}")
+        return
+
+
+def generate_content_from_collection_name(collection_names, limit=10, language="hi", word_count=300):
     print(f"Generating content for {collection_names}")
     try:
-        new_story=generate_ideas_for_collections(collection_names, limit=limit)
+        new_story=generate_ideas_for_collections(collection_names, limit=limit, language=language, word_count=word_count)
         new_story_json = json.loads(new_story)
-        insert_story_content(new_story_json["title"], new_story_json["en"], new_story_json["difficulty"])
-    except:
-        print(f"Error generating content for {collection_names}. Moving on. AI Output is not predictable.")
+        print(f"Inserting content for {collection_names} with title {new_story_json['title']}")
+        insert_story_content(new_story_json["title"], new_story_json["en"], new_story_json["difficulty"], targetLanguage=language)
+    except Exception as e:
+        print(f"Error generating content for {collection_names}. Moving on. AI Output is not predictable. {e}")
         return
 
 
