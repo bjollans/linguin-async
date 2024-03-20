@@ -102,6 +102,6 @@ def generate_known_fiction_story(title, language, word_count=300):
     print(f"Generating known fiction story for {title} for language {language}")
     return chain_of_thought([
         f'Do you know the {language_to_country_adjective[language]} story of "{title}"?',
-        f'Write an English version of this story for language learners. It should be around {word_count} words long. Do not explain the moral.',
+        f'Write an English version of this story for language learners. It should be around {word_count} words long. Do not explain the moral. Do not mention {language_to_country[language]}.',
         "Put every sentence in a new line.",
     ])
