@@ -36,6 +36,15 @@ def generate_and_save_mini_story_by_committee(language, word_count=300):
     except Exception as e:
         print(f"Error generating mini story. Moving on. AI Output is not predictable. {e}")
         return
+    
+
+def generate_and_save_known_fiction_story(title, language, word_count=300):
+    try:
+        story_text = generate_known_fiction_story(title, language, word_count=word_count)
+        insert_story_content(title, story_text, "Intermediate", targetLanguage=language)
+    except Exception as e:
+        print(f"Error generating known fiction story. Moving on. AI Output is not predictable. {e}")
+        return
 
 
 def generate_content_from_collection_name(collection_names, limit=10, language="hi", word_count=300):

@@ -6,6 +6,23 @@ from util.gpt.gpt import chain_of_thought, chain_of_thought_with_image, react_to
 language_to_country = {
     "hi": "India",
     "ja": "Japan",
+    "el": "Greece",
+    "de": "Germany",
+    "zh": "China",
+    "vi": "Vietnam",
+    "ko": "Korea",
+    "th": "Thailand",
+}
+
+language_to_country_adjective = {
+    "hi": "indian",
+    "ja": "japanese",
+    "el": "greek",
+    "de": "german",
+    "zh": "chinese",
+    "vi": "vietnamese",
+    "ko": "korean",
+    "th": "thai",
 }
 
 
@@ -81,9 +98,10 @@ def generate_non_fiction_story(topic, word_count=300):
     ])
 
 
-def generate_known_fiction_story(title, word_count=300):
+def generate_known_fiction_story(title, language, word_count=300):
+    print(f"Generating known fiction story for {title} for language {language}")
     return chain_of_thought([
-        f'Tell me the story "{title}" in {word_count} words:',
-        "Simplify the language to be at a second grader reading level.",
+        f'Do you know the {language_to_country_adjective[language]} story of "{title}"?',
+        f'Write an English version of this story for language learners. It should be around {word_count} words long. Do not explain the moral.',
         "Put every sentence in a new line.",
     ])

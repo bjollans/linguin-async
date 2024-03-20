@@ -240,7 +240,6 @@ def insert_story_content(title, content, difficulty, targetLanguage="hi"):
         .insert({"title": title,
                  "en": content,
                  "difficulty": difficulty,
-                 "translationLanguage": "en",
                  "targetLanguage": targetLanguage,
                  "status": "Content Review Pending"}) \
         .execute()
