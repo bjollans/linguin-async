@@ -10,7 +10,7 @@ Style: flat, colorful"""
 
 
 def get_img_url_non_fiction(text):
-    prompt = f"""Generate a title image for the following text. Generate a single illustration, that captures the most important part of the text, in a flat, colorful style. Make the shapes clear and the content simple:
+    prompt = f"""Generate a title image for the following text. Generate a single illustration, that captures the most important part of the text, in a flat, colorful style. Make the shapes clear and the content simple and child friendly:
 {text}
 Style: flat, colorful"""
     return dalle3_image_url(prompt)

@@ -1,8 +1,9 @@
 import random
 from util.dalle3 import get_img_url_fiction, get_img_url_non_fiction
-from util.db import get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status
+from util.db import get_stories_by_language, get_stories_in_review, get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status, update_story
 from util.file_utils import download_image_from_url
-from util.gpt.story_generation import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_non_fiction_story
+from util.gpt.gpt import single_chat_completion
+from util.gpt.story_generation import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_non_fiction_story, generate_story_summary
 import json
 
 
@@ -102,3 +103,21 @@ def generate_images_for_story(title, is_fiction=False, image_amount = 3):
     for i in range(image_amount):
         print(f"Downloading image {i} for {title}")
         download_image_from_url(img_urls[i], f"/Users/bernardjollans/Pictures/Linguin/GeneratedStoryImages/{title}_{i}.png")
+
+
+def check_story_duplicates(language):
+    stories = get_stories_by_language(language)
+    prompt = "Which of these stories have the same content? " + str(stories)
+    return single_chat_completion(prompt)
+
+
+def generate_and_save_summaries():
+    stories = get_stories_in_review()
+    for i, story in enumerate(stories):
+        print(f"Generating summary for {story['id']}; {i+1}/{len(stories)}")
+        if story["summary"]:
+            print("Summary already exists. Skipping.")
+            continue
+        summary = generate_story_summary(story["en"])
+        story["summary"] = summary
+        update_story(story)
