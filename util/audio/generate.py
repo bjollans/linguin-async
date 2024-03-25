@@ -3,7 +3,10 @@ import os
 
 lang_to_voice = {
     "hi": "preeti",
-    "ja": "yuriko",
+    "ja": "tomoka",
+    "de": "martina",
+    "el": "eleni",
+    "zh": "meilan",
 }
 
 def generate_audio_for_text(text, lang, output_file_prefix):

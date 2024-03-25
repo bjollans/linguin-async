@@ -10,30 +10,33 @@ def _text_to_audio_with_sentence_timestamps(text, lang, output_file):
     sentence_timestamps = get_time_stamps(generated_files)
     return sentence_timestamps
 
-def generate_audio_for_story(story_id):
+def generate_audio_for_story_translation(story_translation_id):
     char_whitelist = set('abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
+    story_translation = db.get_story_translation_by_id(story_translation_id)
+    story_id = story_translation["storyId"]
+
     story = db.get_story_by_id(story_id)
-    text = story["content"]
-    lang = story["targetLanguage"]
+    text = story_translation["content"]
+    lang = story_translation["targetLanguage"]
     title = ''.join(filter(char_whitelist.__contains__, story["title"]))
 
 
     audio_file = f"/tmp/{title}.mp3"
     sentence_timestamps = _text_to_audio_with_sentence_timestamps(text, lang, audio_file)
     audio_url = db.upload_audio_to_bucket(audio_file, f"{title}.mp3")
-    story["audioUrl"] = audio_url
-    story["audioSentenceTimes"] = sentence_timestamps
-    db.update_story(story)
+    story_translation["audioUrl"] = audio_url
+    story_translation["audioSentenceTimes"] = sentence_timestamps
+    db.update_story_translation(story_translation)
 
 
 def get_file_name_for_word(word):
     return "-".join([str(ord(letter)) for letter in word])
 
-def generate_audio_for_words_by_translation_json(story_id):
-    story = db.get_story_by_id(story_id)
-    lang = story["targetLanguage"]
-    translation_json = story["translationJson"]
+def generate_audio_for_words_by_translation_json(story_translation_id):
+    story_translation = db.get_story_translation_by_id(story_translation_id)
+    lang = story_translation["targetLanguage"]
+    translation_json = story_translation["translationJson"]
     words_to_record = [term["text"] for term in translation_json["terms"]]
 
     for word in words_to_record:

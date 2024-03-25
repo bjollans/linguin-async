@@ -105,3 +105,9 @@ def generate_known_fiction_story(title, language, word_count=300):
         f'Write an English version of this story for language learners. It should be around {word_count} words long. Do not explain the moral. Do not mention {language_to_country[language]}.',
         "Put every sentence in a new line.",
     ])
+
+def generate_story_summary(content):
+    prompt = f"""Write a summary of the following story in 50 words.
+{content}
+    """
+    return single_chat_completion(prompt)

@@ -7,3 +7,6 @@ pydub==0.25.1
 ffmpeg==1.4
 requests==2.31.0
 pykakasi==2.2.1
+deepl==1.17.0
+dragonmapper==0.2.6
+transliterate==1.10.2

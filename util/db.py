@@ -36,6 +36,22 @@ def update_story(story):
         .execute()
     return response.data
 
+def update_story_translation(story_translation):
+    response = supabase \
+        .table('storyTranslations') \
+        .update(story_translation) \
+        .eq("id", story_translation["id"]) \
+        .execute()
+    return response.data
+
+
+def insert_story_translation(story_translation):
+    response = supabase \
+        .table('storyTranslations') \
+        .insert(story_translation) \
+        .execute()
+    return response.data
+
 
 def get_story_by_id(story_id):
     response = supabase \
@@ -76,6 +92,15 @@ def get_stories_by_status(status):
     return response.data
 
 
+def get_stories_in_review():
+    response = supabase \
+        .table('stories') \
+        .select("*") \
+        .neq("status", "Done") \
+        .execute()
+    return response.data
+
+
 def set_story_status(story_id, status):
     response = supabase \
         .table('stories') \
@@ -94,12 +119,31 @@ def get_stories_without_content():
     return response.data
 
 
-def get_stories_done_without_content():
+def get_story_ids_done_without_translation():
+    response_translation = supabase \
+        .table('storyTranslations') \
+        .select("storyId") \
+        .execute()
+    story_ids_with_translation = list(
+        set([x["storyId"] for x in response_translation.data]))
+    
+    response_stories = supabase \
+        .table('stories') \
+        .select("id") \
+        .eq("status", "Done") \
+        .execute()
+    all_ids = list(set([x["id"] for x in response_stories.data]))
+
+    stories_without_translation = [
+        story for story in all_ids if story not in story_ids_with_translation]
+    return stories_without_translation
+
+
+def get_stories_done_without_images():
     response = supabase \
         .table('stories') \
         .select("id") \
-        .is_("content", "null") \
-        .eq("status", "Done") \
+        .is_("imageUrl", "null") \
         .execute()
     return response.data
 
@@ -177,12 +221,21 @@ def insert_questions(questions):
     return response.data
 
 
-def get_stories_without_audio():
+def get_story_translations_without_audio():
     response = supabase \
-        .table('stories') \
+        .table('storyTranslations') \
         .select("id") \
         .is_("audioUrl", "null") \
         .not_.is_("content", "null") \
+        .execute()
+    return response.data
+
+def get_story_translation_by_id(story_translation_id):
+    response = supabase \
+        .table('storyTranslations') \
+        .select("*") \
+        .eq("id", story_translation_id) \
+        .single() \
         .execute()
     return response.data
 
@@ -242,6 +295,14 @@ def insert_story_content(title, content, difficulty, targetLanguage="hi"):
                  "difficulty": difficulty,
                  "targetLanguage": targetLanguage,
                  "status": "Content Review Pending"}) \
+        .execute()
+    return response.data
+
+def get_stories_by_language(language):
+    response = supabase \
+        .table('stories') \
+        .select("title, en") \
+        .eq("targetLanguage", language) \
         .execute()
     return response.data
 

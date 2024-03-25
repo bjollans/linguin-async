@@ -4,8 +4,10 @@ from devatrans import DevaTrans
 
 import util.gpt.word_operations as gpt
 from util.translation import translate_text
+from util.transliteration.el import get_greek_transliteration
 from util.transliteration.hi import get_indic_transliteration
 from util.transliteration.ja import get_japanese_transliteration
+from util.transliteration.zh import get_chinese_transliteration
 from util.vocab_db import VocabDB
 from util.word_splitter import WordSplitter
 
@@ -60,6 +62,10 @@ def transliterate_term(term: Term, from_lang: str):
         term.transliteration = get_indic_transliteration(term.text)
     if from_lang == "ja":
         term.transliteration = get_japanese_transliteration(term.text)
+    if from_lang == "zh":
+        term.transliteration = get_chinese_transliteration(term.text)
+    if from_lang == "el":
+        term.transliteration = get_greek_transliteration(term.text)
 
 
 def transliterate_terms(terms: list[Term], from_lang: str):
@@ -88,15 +94,16 @@ def translate_sentences(terms: list[Term], from_lang: str, to_lang: str):
         term.translation = translate_text(term.text, from_lang, to_lang)
 
 
-def get_translation_json(text, from_lang, to_lang) -> dict:
+def get_translation_json(text, from_lang) -> dict:
     sentences: list[Term] = get_sentences(text)
     word_group_strs: list[str] = []
     for sentence in sentences:
+        print(f"Getting word splits for sentence {sentences.index(sentence)+1}/{len(sentences)}")
         word_group_strs += get_and_update_word_splits(sentence.text, from_lang)
     word_groups: list[Term] = _term_str_to_terms(text, word_group_strs)
 
-    translate_terms(word_groups, from_lang, to_lang)
-    translate_sentences(sentences, from_lang, to_lang)
+    translate_terms(word_groups, from_lang, "en")
+    translate_sentences(sentences, from_lang, "en")
 
     transliterate_terms(word_groups, from_lang)
     transliterate_terms(sentences, from_lang)

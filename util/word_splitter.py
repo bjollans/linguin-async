@@ -19,6 +19,8 @@ class WordSplitter:
         if self.from_lang == "ja":
             kks_result = self.kks.convert(text)
             words: list[str] = [x["orig"] for x in kks_result]
+        if self.from_lang == "zh":
+            words: list[str] = text_to_word_groups(text)
         else:
             words: list[str] = text.split(" ")
         return [WordSplitter._remove_non_letters(word) for word in words]
