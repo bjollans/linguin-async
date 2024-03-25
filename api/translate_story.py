@@ -11,8 +11,8 @@ def translate_story(query):
     story_translation = {}
     story_translation["targetLanguage"] = target_language
     if story["en"]:
-        translated_text = translate_text(story["en"][:20], "en", target_language)
-        story_translation["content"] = proof_read_translation(story["en"][:20],translated_text, target_language)
+        translated_text = translate_text(story["en"], "en", target_language)
+        story_translation["content"] = proof_read_translation(story["en"],translated_text, target_language)
     translation_json = get_translation_json(story_translation["content"], target_language)
     story_translation["translationJson"] = translation_json
     story_translation["wordCount"] = len(translation_json["terms"])
