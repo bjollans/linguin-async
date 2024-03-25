@@ -17,7 +17,7 @@ def translate_story(query):
     story_translation["translationJson"] = translation_json
     story_translation["wordCount"] = len(translation_json["terms"])
     story_translation["storyId"] = story_id
-    translation_json["wordsInStory"] = get_word_list_from_translation_json(translation_json)
+    story_translation["wordsInStory"] = get_word_list_from_translation_json(translation_json)
     db.insert_story_translation(story_translation)
     return success
 
