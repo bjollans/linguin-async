@@ -224,7 +224,7 @@ def insert_questions(questions):
 def get_story_translations_without_audio():
     response = supabase \
         .table('storyTranslations') \
-        .select("id") \
+        .select("*") \
         .is_("audioUrl", "null") \
         .not_.is_("content", "null") \
         .execute()
