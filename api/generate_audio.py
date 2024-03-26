@@ -10,6 +10,9 @@ def generate_audio(query):
 def generate_audio_for_all_translations():
     story_translations = db.get_story_translations_without_audio()
     for i, story_translation in enumerate(story_translations):
+        if "```" in story_translation["content"]:
+            story_translation["content"] = story_translation["content"].replace("```\n","").replace("\n```","")
+            db.update_story_translation(story_translation)
         print(f"Generating audio for {story_translation['id']}; {i+1}/{len(story_translations)}")
         query = {"id": story_translation["id"]}
         generate_audio(query)
