@@ -239,6 +239,16 @@ def get_story_translation_by_id(story_translation_id):
         .execute()
     return response.data
 
+def get_story_translation_by_story_id_and_lang(story_id, target_language):
+    response = supabase \
+        .table('storyTranslations') \
+        .select("*") \
+        .eq("storyId", story_id) \
+        .eq("targetLanguage", target_language) \
+        .single() \
+        .execute()
+    return response.data
+
 
 def get_messages_by_conversation_id(conversation_id):
     response = supabase \

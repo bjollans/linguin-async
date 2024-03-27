@@ -1,3 +1,4 @@
+from util.audio.audio_orchestrate import generate_audio_for_words_by_translation_json
 from util.get_translation_json import get_translation_json
 import util.db as db
 from api.common_responses import success
@@ -26,4 +27,14 @@ def translate_stories_without_translation():
     for i, story_id in enumerate(story_ids):
         print(f"Translating {story_id}; {i+1}/{len(story_ids)}")
         translate_story({"id": story_id})
+    return success
+
+def update_translation_json_and_word_audio(query):
+    story_id = query["id"]
+    target_language = query["targetLanguage"]
+    story_translation = db.get_story_translation_by_story_id_and_lang(story_id, target_language)
+    translation_json = get_translation_json(story_translation["content"], target_language)
+    story_translation["wordsInStory"] = get_word_list_from_translation_json(translation_json)
+    db.update_story_translation(story_translation)
+    generate_audio_for_words_by_translation_json(story_translation["id"])
     return success
