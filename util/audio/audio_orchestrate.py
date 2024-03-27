@@ -1,6 +1,7 @@
 from util.audio.concatenate import concatenate_and_save_mp3, get_time_stamps
 from util.audio.generate import generate_audio_for_sentence, generate_audio_for_text
 import util.db as db
+import os
 
 
 def _text_to_audio_with_sentence_timestamps(text, lang, output_file):
@@ -48,3 +49,4 @@ def generate_audio_for_words_by_translation_json(story_translation_id):
         audio_file = f"/tmp/{file_name}.mp3"
         generate_audio_for_sentence(word, lang, audio_file)
         db.upload_audio_to_bucket(audio_file, f"{file_name}.mp3", bucket="wordSound")
+        os.remove(audio_file)
