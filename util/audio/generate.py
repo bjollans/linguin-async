@@ -42,7 +42,13 @@ def generate_audio_for_sentence(text, lang, output_file, speed="normal"):
     }
 
     with open(output_file, 'wb') as f:
-        f.write(requests.post(url, **options).content)
+        response = requests.post(url, **options)
+        # Crude implementation of 2 retries
+        if response.status_code != 200:
+            response = requests.post(url, **options)
+            if response.status_code != 200:
+                raise Exception(f"Failed to generate audio: {response.text}")
+        f.write(response.content)
 
 if __name__ == "__main__":
     text = """
