@@ -2,9 +2,12 @@ import unicodedata
 from util.gpt.word_operations import text_to_word_groups
 from util.vocab_db import VocabDB
 import pykakasi
+import stanza
 
 class WordSplitter:
     kks = pykakasi.kakasi()
+    stanza.download('zh', processors='tokenize')
+    zh_nlp = stanza.Pipeline('zh', processors='tokenize')
 
     def __init__(self, from_lang) -> None:
         self.from_lang = from_lang
@@ -20,7 +23,8 @@ class WordSplitter:
             kks_result = self.kks.convert(text)
             words: list[str] = [x["orig"] for x in kks_result]
         elif self.from_lang == "zh":
-            words: list[str] = text_to_word_groups(text)
+            stanza_result = self.zh_nlp(text)
+            words: list[str] = [y.text for x in stanza_result.sentences for y in x.words]
         else:
             words: list[str] = text.split(" ")
         return [WordSplitter._remove_non_letters(word) for word in words]
