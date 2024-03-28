@@ -139,6 +139,15 @@ def get_story_ids_done_without_translation():
     return stories_without_translation
 
 
+def get_story_tranlation_idsby_language(language):
+    response = supabase \
+        .table('storyTranslations') \
+        .select("id") \
+        .eq("targetLanguage", language) \
+        .execute()
+    return response.data
+
+
 def get_stories_done_without_images():
     response = supabase \
         .table('stories') \
