@@ -16,7 +16,7 @@ def generate_audio_for_text(text, lang, output_file_prefix):
     for i, sentence in enumerate(sentences):
         output_file = f"/tmp/{output_file_prefix}_{i}.mp3"
         output_files.append(output_file)
-        generate_audio_for_sentence(sentence, lang, output_file, speed="normal")
+        generate_audio_for_sentence(sentence, lang, output_file, speed="slow")
     return output_files
 
 def generate_audio_for_sentence(text, lang, output_file, speed="normal"):
