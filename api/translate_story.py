@@ -30,7 +30,7 @@ def translate_stories_without_translation():
     return success
 
 def update_translation_json_and_word_audio_by_language(language):
-    story_translation_ids = db.get_story_tranlation_idsby_language(language)
+    story_translation_ids = [x["id"] for x in db.get_story_tranlation_idsby_language(language)]
     for i, story_translation_id in enumerate(story_translation_ids):
         print(f"Translating {story_translation_id}; {i+1}/{len(story_translation_ids)}")
         update_translation_json_and_word_audio({"id": story_translation_id, "targetLanguage": language})
