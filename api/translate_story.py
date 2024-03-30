@@ -1,4 +1,4 @@
-from util.audio.audio_orchestrate import generate_audio_for_words_by_translation_json
+from util.audio.audio_orchestrate import generate_audio_for_story_translation, generate_audio_for_words_by_translation_json
 from util.get_translation_json import get_translation_json
 import util.db as db
 from api.common_responses import success
@@ -33,7 +33,7 @@ def update_translation_json_and_word_audio_by_language(language):
     story_translation_ids = db.get_story_tranlation_idsby_language(language)
     for i, story_translation_id in enumerate(story_translation_ids):
         print(f"Translating {story_translation_id}; {i+1}/{len(story_translation_ids)}")
-        translate_story({"id": story_translation_id, "targetLanguage": language})
+        update_translation_json_and_word_audio({"id": story_translation_id, "targetLanguage": language})
 
 
 def update_translation_json_and_word_audio(query):
@@ -43,5 +43,8 @@ def update_translation_json_and_word_audio(query):
     translation_json = get_translation_json(story_translation["content"], target_language)
     story_translation["wordsInStory"] = get_word_list_from_translation_json(translation_json)
     db.update_story_translation(story_translation)
+    print(f"Generating audio for {story_translation_id}")
+    generate_audio_for_story_translation(story_translation_id)
+    print(f"Generating for words in {story_translation_id}")
     generate_audio_for_words_by_translation_json(story_translation["id"])
     return success

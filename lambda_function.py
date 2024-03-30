@@ -11,7 +11,7 @@ from api.generate_audio import generate_audio, generate_audio_for_all_translatio
 import json
 from api.update_conversation import update_conversation
 from api.update_conversations import update_conversations
-from api.translate_story import translate_story, translate_stories_without_translation
+from api.translate_story import translate_story, translate_stories_without_translation, update_translation_json_and_word_audio, update_translation_json_and_word_audio_by_language
 from api.generate_questions import generate_questions_for_all_stories
 
 required_args = ['type']
@@ -79,10 +79,11 @@ if __name__ == "__main__":
     #print(check_story_duplicates("ja"))
 
     #generate_and_save_summaries()
+    update_translation_json_and_word_audio_by_language("ja")
 
     #generate_images_for_image_pending_stories()
-    translate_stories_without_translation()
-    generate_audio_for_all_translations()
+    #translate_stories_without_translation()
+    #generate_audio_for_all_translations()
     #update_images_for_stories_without_images()
     #generate_questions_for_all_stories()
 
