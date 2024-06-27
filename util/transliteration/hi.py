@@ -21,6 +21,8 @@ def split_syllables_transliterated(word):
 
 
 def ends_with_matra(word):
+    if len(word) < 1:
+        return False
     matra_start = 0x093E
     matra_end = 0x094C
     last_char = word[-1]

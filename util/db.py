@@ -36,19 +36,39 @@ def update_story(story):
         .execute()
     return response.data
 
+
 def update_story_translation(story_translation):
     response = supabase \
         .table('storyTranslations') \
         .update(story_translation) \
         .eq("id", story_translation["id"]) \
         .execute()
-    return response.data
+    return response.data[0]["id"]
 
 
 def insert_story_translation(story_translation):
     response = supabase \
         .table('storyTranslations') \
         .insert(story_translation) \
+        .execute()
+    return response.data[0]["id"]
+
+
+def mark_other_story_translations_for_story_as_not_visible(story_translation_id, story_id):
+    response = supabase \
+        .table('storyTranslations') \
+        .update({"visible": False}) \
+        .eq("storyId", story_id) \
+        .neq("id", story_translation_id) \
+        .execute()
+    return response.data
+
+
+def mark_story_translation_as_visible(story_translation_id):
+    response = supabase \
+        .table('storyTranslations') \
+        .update({"visible": True}) \
+        .eq("id", story_translation_id) \
         .execute()
     return response.data
 
@@ -126,7 +146,7 @@ def get_story_ids_done_without_translation():
         .execute()
     story_ids_with_translation = list(
         set([x["storyId"] for x in response_translation.data]))
-    
+
     response_stories = supabase \
         .table('stories') \
         .select("id") \
@@ -169,6 +189,14 @@ def get_all_stories():
     response = supabase \
         .table('stories') \
         .select("*") \
+        .execute()
+    return response.data
+
+def get_all_visible_story_translations():
+    response = supabase \
+        .table('storyTranslations') \
+        .select("*") \
+        .eq('visible', True) \
         .execute()
     return response.data
 
@@ -230,14 +258,17 @@ def insert_questions(questions):
     return response.data
 
 
-def get_story_translations_without_audio():
+def get_story_translations_without_audio(target_language=None):
     response = supabase \
         .table('storyTranslations') \
         .select("*") \
         .is_("audioUrl", "null") \
-        .not_.is_("content", "null") \
-        .execute()
+        .not_.is_("content", "null")
+    if target_language:
+        response = response.eq("targetLanguage", target_language)
+    response = response.execute()
     return response.data
+
 
 def get_story_translation_by_id(story_translation_id):
     response = supabase \
@@ -247,6 +278,7 @@ def get_story_translation_by_id(story_translation_id):
         .single() \
         .execute()
     return response.data
+
 
 def get_story_translation_by_story_id_and_lang(story_id, target_language):
     response = supabase \
@@ -317,6 +349,7 @@ def insert_story_content(title, content, difficulty, targetLanguage="hi"):
         .execute()
     return response.data
 
+
 def get_stories_by_language(language):
     response = supabase \
         .table('stories') \
@@ -342,6 +375,7 @@ def get_story_ids_for_collection_name(collectionName):
         .eq("collectionName", collectionName) \
         .execute()
     return response.data
+
 
 def get_story_titles_for_language(language):
     response = supabase \

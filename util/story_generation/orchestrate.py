@@ -6,6 +6,8 @@ from util.gpt.gpt import single_chat_completion
 from util.gpt.story_generation import generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_non_fiction_story, generate_story_summary
 import json
 
+from util.validation.sentence_size import sentences_are_too_long
+
 
 def generate_one_round_of_content(language, round_size=5):
     print(f"Generating content for {round_size} rounds")
@@ -69,8 +71,11 @@ def generate_content(title, idea, is_fiction=False, paragraph_count = 3):
     else:
         content = generate_non_fiction_story(idea, paragraph_count=paragraph_count)
 
-    print(f"Inserting content for {title}")
-    insert_story_content(title, content, difficulty)
+    if not sentences_are_too_long(content):
+        print(f"Inserting content for {title}")
+        insert_story_content(title, content, difficulty)
+    else:
+        print(f"Skipping content for {title} because sentences are too long")
 
 
 def generate_images_for_image_pending_stories():

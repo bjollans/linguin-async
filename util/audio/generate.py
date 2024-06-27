@@ -9,6 +9,15 @@ lang_to_voice = {
     "zh": "meilan",
 }
 
+lang_to_speed = {
+    "hi": "slow",
+    "ja": "normal",
+    "de": "normal",
+    "el": "slow",
+    "zh": "slow",
+}
+
+
 def generate_audio_for_text(text, lang, output_file_prefix):
     print(f"Generating audio for {text} in {lang} and with prefix {output_file_prefix}")
     sentences = [s.strip() for s in text.split("\n") if len(s.strip()) > 0]
@@ -16,7 +25,7 @@ def generate_audio_for_text(text, lang, output_file_prefix):
     for i, sentence in enumerate(sentences):
         output_file = f"/tmp/{output_file_prefix}_{i}.mp3"
         output_files.append(output_file)
-        generate_audio_for_sentence(sentence, lang, output_file, speed="slow")
+        generate_audio_for_sentence(sentence, lang, output_file, speed=lang_to_speed[lang])
     return output_files
 
 def generate_audio_for_sentence(text, lang, output_file, speed="normal"):
@@ -47,7 +56,10 @@ def generate_audio_for_sentence(text, lang, output_file, speed="normal"):
         if response.status_code != 200:
             response = requests.post(url, **options)
             if response.status_code != 200:
-                raise Exception(f"Failed to generate audio: {response.text}")
+                if "script cannot be empty" in response.text or "script not provided" in response.text:
+                    print("Ignoring: Error because of empty script for: " + text)
+                else:
+                    raise Exception(f"Failed to generate audio: {response.text}")
         f.write(response.content)
 
 if __name__ == "__main__":

@@ -31,8 +31,10 @@ def generate_audio_for_story_translation(story_translation_id):
     db.update_story_translation(story_translation)
 
 
-def get_file_name_for_word(word):
-    return "-".join([str(ord(letter)) for letter in word])
+def get_file_name_for_word(lang, word):
+    return lang+ "-" + "-".join([str(ord(letter)) for letter in word])
+
+_local_word_audio_cache=[]
 
 def generate_audio_for_words_by_translation_json(story_translation_id):
     story_translation = db.get_story_translation_by_id(story_translation_id)
@@ -41,12 +43,23 @@ def generate_audio_for_words_by_translation_json(story_translation_id):
     words_to_record = [term["text"] for term in translation_json["terms"]]
 
     for word in words_to_record:
-        if db.file_exists(f"{get_file_name_for_word(word)}.mp3", bucket="wordSound"):
-            print(f"Audio for {word} already exists")
+        if lang+'-'+word in _local_word_audio_cache:
+            print(f"Audio for {word} already exists in local cache")
+            continue
+        if db.file_exists(f"{get_file_name_for_word(lang, word)}.mp3", bucket="wordSound"):
+            print(f"Audio for {word} already exists in bucket")
+            _local_word_audio_cache.append(lang+'-'+word)
             continue
         print(f"Generating audio for {word}")
-        file_name = get_file_name_for_word(word)
+        file_name = get_file_name_for_word(lang, word)
         audio_file = f"/tmp/{file_name}.mp3"
         generate_audio_for_sentence(word, lang, audio_file)
-        db.upload_audio_to_bucket(audio_file, f"{file_name}.mp3", bucket="wordSound")
+        try:
+            db.upload_audio_to_bucket(audio_file, f"{file_name}.mp3", bucket="wordSound")
+        except Exception as e:
+            if "The resource already exists" in str(e):
+                print(f"Audio for {word} already exists in bucket")
+            else:
+                raise e
         os.remove(audio_file)
+        _local_word_audio_cache.append(word)

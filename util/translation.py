@@ -40,10 +40,25 @@ def _google_translate(text, from_lang, to_lang):
             "contents": [text],
             "mime_type": "text/plain",
             "source_language_code": from_lang,
-            "target_language_code": to_lang
+            "target_language_code": to_lang,
         }
     )
     return response.translations[0].translated_text
+
+
+def fix_formatting(original, translated_text):
+    prompt = f"""
+Given the following text:
+{original}
+
+And the following translation:
+{translated_text}
+
+Fix the formatting of the translation so that it is the same as the original text.
+
+Return only the formatted translation. Do not return any other text.
+"""
+    return single_chat_completion(prompt)
 
 
 def proof_read_translation(original_text, translated_text, to_lang):
@@ -56,16 +71,13 @@ def proof_read_translation(original_text, translated_text, to_lang):
     }
     prompt = f"""
 I have the following story:
-```
 {original_text}
-```
+
 With the following {language_full_form[to_lang]} translation:
-```
 {translated_text}
-```
 
 The story is meant for language learners. Please proof read the {language_full_form[to_lang]} version and correct any mistakes you find. Please also replace words that are not commonly used in spoken {language_full_form[to_lang]}.
 
-Just give me the proof read version of the story, without commentary.
+Just give me the proof read version of the story, without commentary. Do not change the formatting of the story. Do not change the new lines.
 """
     return single_chat_completion(prompt)

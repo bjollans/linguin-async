@@ -7,8 +7,8 @@ def generate_audio(query):
     generate_audio_for_story_translation(story_translation_id)
     return success
 
-def generate_audio_for_all_translations():
-    story_translations = db.get_story_translations_without_audio()
+def generate_audio_for_all_translations(target_language=None):
+    story_translations = db.get_story_translations_without_audio(target_language)
     for i, story_translation in enumerate(story_translations):
         if "```" in story_translation["content"]:
             story_translation["content"] = story_translation["content"].replace("```\n","").replace("\n```","")

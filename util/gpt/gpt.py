@@ -9,22 +9,25 @@ client = OpenAI()
 
 def get_next_message(messages, system_prompt):
     chat_completion = client.chat.completions.create(
-        model="gpt-4-0125-preview",
+        model="gpt-4o",
         messages=[{"role": "system", "content": system_prompt}] + messages,
     )
     return {key: chat_completion.choices[0].message.__dict__[key] for key in ["content", "role"]}
 
 
-def single_chat_completion(prompt, temperature=1, model="gpt-4-0125-preview"):
+def single_chat_completion(prompt, temperature=1, model="gpt-4o", type="text", max_tokens=1024, top_p=1):
     chat_completion = client.chat.completions.create(
         model=model,
         temperature=temperature,
+        max_tokens=max_tokens,
+        top_p=top_p,
         messages=[{"role": "user", "content": prompt}],
+        response_format={ "type": type },
     )
     return chat_completion.choices[0].message.content
 
 
-def chat_completion(chat_json, temperature=1, model="gpt-4-0125-preview", max_tokens=None):
+def chat_completion(chat_json, temperature=1, model="gpt-4o", max_tokens=None):
     chat_completion = client.chat.completions.create(
         model=model,
         temperature=temperature,
@@ -46,7 +49,7 @@ def chain_of_thought(prompts: list[str]) -> str:
         chat_history = [val for pair in zip(
             prompts_to_use, answers_to_use) for val in pair] + [prompts_to_use[-1]]
         answers.append(chat_completion(
-            chat_history, model='gpt-4-0125-preview'))
+            chat_history, model='gpt-4o'))
     return answers[-1]
 
 def chain_of_thought_with_image(prompts: list[str], image_url, model='gpt-4-turbo-preview') -> str:

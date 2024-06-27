@@ -11,3 +11,4 @@ deepl==1.17.0
 dragonmapper==0.2.6
 transliterate==1.10.2
 stanza==1.8.1
+setuptools==70.0.0

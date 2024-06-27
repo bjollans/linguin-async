@@ -20,7 +20,8 @@ class WordSplitter:
     
     def split_text_into_words(self, text) -> list[str]:
         if self.from_lang == "ja":
-            words: list[str] = text_to_word_groups(text)
+            kks_result = self.kks.convert(text)
+            words: list[str] = [x["orig"] for x in kks_result]
         elif self.from_lang == "zh":
             stanza_result = self.zh_nlp(text)
             words: list[str] = [y.text for x in stanza_result.sentences for y in x.words]
