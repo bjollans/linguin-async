@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple
+from dataclasses import asdict, dataclass
 import json
 from typing import List
 import uuid
@@ -16,38 +17,27 @@ from util.vocab_db import VocabDB
 from util.word_splitter import WordSplitter
 
 
+@dataclass
 class Term:
-    def __init__(self,
-                 text,
-                 position=-1,
-                 translation=None,
-                 transliteration=None,
-                 case=None,
-                 word_type=None,
-                 gender=None,
-                 compound_id=None,
-                 idiom_id=None,
-                 ):
-        self.text = text
-        self.position = position
-        self.translation = translation
-        if transliteration: self.transliteration = transliteration
-        if compound_id: self.compound_id = compound_id
-        if idiom_id: self.idiom_id = idiom_id
-        if case: self.case = case
-        if word_type: self.word_type = word_type
-        if gender: self.gender = gender
+    text: str
+    position: int = -1
+    translation: str = None
+    transliteration: str = None
+    case: str = None
+    word_type: str = None
+    gender: str = None
+    compound_id: str = None
+    idiom_id: str = None
+
+    def to_dict(self):
+        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None})
 
 
+@dataclass
 class Compound:
-    def __init__(self,
-                 id,
-                 text,
-                 translation=None,
-                 ):
-        self.id = id
-        self.text = text
-        self.translation = translation
+    id: str
+    text: str
+    translation: str = None
 
 
 def get_and_update_word_splits(text, from_lang):
@@ -142,61 +132,84 @@ For the `translation` part, pretend the word or compound is standing alone. Retu
 """ + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle","case":"case of the word", "gender": "gender of the word","compound_id": "id of the compound", "idiom_id":"id of the idiom"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...]}\''
 
 
-def _get_word_splits_and_translation_from_gpt(sentences: list[Term]) -> tuple[list[Term], list[Compound], list[Compound]]:
-    terms = []
-    compounds = []
-    idioms = []
-    for sentence in sentences:
-        print(f"Getting word splits for sentence {
-              sentences.index(sentence)+1}/{len(sentences)}")
-        response_json = {}
-        tries = 0
-        while not "sentence" in response_json:
-            tries += 1
-            if tries > 5:
-                raise Exception("Could not get word splits from gpt")
-            prompt = _get_gpt_word_splits_prompt(sentence.text)
-            response = single_chat_completion(
-                prompt, type="json_object", max_tokens=2048, temperature=0, top_p=0.2)
-            try:
-                response_json = (json.loads(response))
-            except json.decoder.JSONDecodeError:
-                print("Could not parse json. Trying again.")
-                continue
-        compound_uuids = get_list_of_uuids(len(response_json["compounds"]) + 1) if "compounds" in response_json else []
-        print(f"compound_uuids: {compound_uuids}")
-        idiom_uuids = get_list_of_uuids(len(response_json["idioms"]) + 1) if "idioms" in response_json else []
-        terms += [Term(text=word["text"], translation=word["translation"],
-                       gender=word["gender"] if "gender" in word else None,
-                       case=word["case"] if "case" in word else None,
-                       word_type=word["word_type"] if "word_type" in word else None,
-                       compound_id=compound_uuids[int(word["compound_id"])] if "compound_id" in word else None,
-                       idiom_id=idiom_uuids[int(word["idiom_id"])] if "idiom_id" in word else None,
-                       ) for word in response_json["sentence"]]
-        if "compounds" in response_json and len(response_json["compounds"]) > 0:
-            compounds += [Compound(
-                id=compound_uuids[int(word["id"])],
-                text=word["text"],
-                translation=word["translation"]
-            ) for word in response_json["compounds"]]
-        if "idioms" in response_json and len(response_json["idioms"]) > 0:
-            idioms += [Compound(
-                id=idiom_uuids[int(word["id"])],
-                text=word["text"],
-                translation=word["translation"]
-            ) for word in response_json["idioms"]]
-        remove_compounds_with_bad_amount_of_words(terms, compounds, idioms)
-    return terms, compounds, idioms
+def _get_word_splits_and_translation_from_gpt(sentence):
+    response_json = {}
+    tries = 0
+    while not "sentence" in response_json:
+        tries += 1
+        if tries > 5:
+            raise Exception("Could not get word splits from gpt")
+        prompt = _get_gpt_word_splits_prompt(sentence.text)
+        response = single_chat_completion(
+            prompt, type="json_object", max_tokens=2048, temperature=0, top_p=0.2)
+        try:
+            response_json = (json.loads(response))
+        except json.decoder.JSONDecodeError:
+            print("Could not parse json. Trying again.")
+            continue
+    sentence_terms = [Term(text=word["text"], translation=word["translation"],
+                           gender=word["gender"] if "gender" in word else None,
+                           case=word["case"] if "case" in word else None,
+                           word_type=word["word_type"] if "word_type" in word else None,
+                           compound_id=word["compound_id"] if "compound_id" in word else None,
+                           idiom_id=word["idiom_id"] if "idiom_id" in word else None,
+                           ) for word in response_json["sentence"]]
+    sentence_compounds = []
+    if "compounds" in response_json and len(response_json["compounds"]) > 0:
+        sentence_compounds += [Compound(
+            id=word["id"],
+            text=word["text"],
+            translation=word["translation"]
+        ) for word in response_json["compounds"]]
+    sentence_idioms = []
+    if "idioms" in response_json and len(response_json["idioms"]) > 0:
+        sentence_idioms += [Compound(
+            id=word["id"],
+            text=word["text"],
+            translation=word["translation"]
+        ) for word in response_json["idioms"]]
+    remove_compounds_with_bad_amount_of_words(
+        sentence_terms, sentence_compounds, sentence_idioms)
+    return sentence_terms, sentence_compounds, sentence_idioms
+
+
+def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from_lang) -> tuple[list[Term], list[Compound], list[Compound]]:
+    sentence_translation_jsons = []
+    legacy_terms = []
+    legacy_compounds = []
+    legacy_idioms = []
+    for index, sentence in enumerate(sentences):
+        print(f"Getting word splits for sentence {index+1}/{len(sentences)}")
+        sentence_terms, sentence_compounds, sentence_idioms = _get_word_splits_and_translation_from_gpt(
+            sentence)
+        transliterate_terms(sentence_terms, from_lang)
+
+        legacy_terms += sentence_terms.copy()
+        legacy_compounds += sentence_compounds.copy()
+        legacy_idioms += sentence_idioms.copy()
+
+        _add_position_to_terms(sentence.text, sentence_terms)
+        sentence_translation_jsons.append({
+            "terms": [t.to_dict() for t in sentence_terms],
+            "compounds": [c.__dict__ for c in sentence_compounds],
+            "idioms": [i.__dict__ for i in sentence_idioms],
+            "wholeSentence": sentence.to_dict(),
+        })
+
+    return sentence_translation_jsons, legacy_terms, legacy_compounds, legacy_idioms
+
 
 def remove_compounds_with_bad_amount_of_words(terms, compounds, idioms):
     compound_id_count = defaultdict(lambda: 0)
     idiom_id_count = defaultdict(lambda: 0)
     for term in terms:
-        if term.compound_id: compound_id_count[term.compound_id] += 1
-        if term.idiom_id: idiom_id_count[term.idiom_id] += 1
+        if term.compound_id:
+            compound_id_count[term.compound_id] += 1
+        if term.idiom_id:
+            idiom_id_count[term.idiom_id] += 1
     for term in terms:
         if term.compound_id and compound_id_count[term.compound_id] <= 1:
-            terms.remove(term)
+            term.compound_id = None
     for compound in compounds:
         if compound_id_count[compound.id] <= 1:
             compounds.remove(compound)
@@ -204,24 +217,21 @@ def remove_compounds_with_bad_amount_of_words(terms, compounds, idioms):
         if idiom_id_count[idiom.id] <= 1:
             idioms.remove(idiom)
 
-def get_list_of_uuids(length: int) -> List[str]:
-    return [str(uuid.uuid4()) for i in range(length)]
-
 
 def get_translation_json(text, from_lang) -> dict:
     sentences: list[Term] = get_sentences(text)
     translate_sentences(sentences, from_lang, "en")
-
-    word_groups, compounds, idioms = _get_word_splits_and_translation_from_gpt(
-        sentences)
-    _add_position_to_terms(text, word_groups)
-
-    transliterate_terms(word_groups, from_lang)
     transliterate_terms(sentences, from_lang)
 
+    sentence_translation_jsons, legacy_word_groups, legacy_compounds, legacy_idioms = _calculate_sentence_by_sentence_translation_json(
+        sentences, from_lang)
+    # legacy:
+    _add_position_to_terms(text, legacy_word_groups)
+
     return {
-        "terms": [w.__dict__ for w in word_groups],
-        "compounds": [c.__dict__ for c in compounds],
-        "idioms": [i.__dict__ for i in idioms],
+        "terms": [w.__dict__ for w in legacy_word_groups],
+        "compounds": [c.__dict__ for c in legacy_compounds],
+        "idioms": [i.__dict__ for i in legacy_idioms],
         "sentences": [s.__dict__ for s in sentences],
+        "sentenceTranslationJsons": sentence_translation_jsons,
     }
