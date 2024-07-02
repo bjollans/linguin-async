@@ -82,10 +82,6 @@ If a word has one or more auxiliary adjective attached, add this in the "compoun
 A particle plus another word can never be a compound!
 Add the "compound_id" to all words, that are part of the compound.
 
-If multiple words make up a idiom or chéngyǔ, add it in the "idioms" section.
-Add the "idiom_id" to all words, that are part of the compound!! Do not leave any word out.
-An idiom must have multiple words!
-
 If a word is made up of multiple characters, add them in hanzis and under the hanzis section. Do not do this for words with only one character!!
 
 For the dictionary_translation, imagine the word is standing alone.
