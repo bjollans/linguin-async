@@ -1,5 +1,7 @@
 from collections import defaultdict, namedtuple
 from dataclasses import asdict, dataclass
+from functools import partial
+import itertools
 import json
 from typing import List
 import uuid
@@ -16,6 +18,7 @@ from util.transliteration.ja import get_japanese_transliteration
 from util.transliteration.zh import get_chinese_transliteration
 from util.vocab_db import VocabDB
 from util.word_splitter import WordSplitter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 @dataclass
@@ -137,6 +140,10 @@ def translate_sentences(terms: list[Term], from_lang: str, to_lang: str):
 
 def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
     response_json = get_gpt_word_splits(sentence.text, from_lang)
+    return _process_word_splits_and_translation_from_gpt(response_json)
+
+
+def _process_word_splits_and_translation_from_gpt(response_json):
     sentence_terms = [Term(text=word["text"], translation=word["translation"],
                            gender=word["gender"] if "gender" in word else None,
                            case=word["case"] if "case" in word else None,
@@ -160,39 +167,19 @@ def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
             text=word["text"],
             translation=word["translation"]
         ) for word in response_json["idioms"]]
-    sentence_kanjis = []
-    if "kanjis" in response_json and len(response_json["kanjis"]) > 0:
-        sentence_kanjis += [Kanji(
-            text=word["text"],
-            on=word["on"],
-            kun=word["kun"],
-            meaning=word["meaning"]
-        ) for word in response_json["kanjis"]]
-    sentence_hanzis = []
-    if "hanzis" in response_json and len(response_json["hanzis"]) > 0:
-        sentence_hanzis += [Hanzi(
-            text=word["text"],
-            meaning=word["meaning"]
-        ) for word in response_json["hanzis"]]
-    return sentence_terms, sentence_compounds, sentence_idioms, sentence_kanjis, sentence_hanzis
+    return sentence_terms, sentence_compounds, sentence_idioms
 
 
-def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from_lang) -> tuple[list[Term], list[Compound], list[Compound]]:
-    sentence_translation_jsons = []
-    legacy_terms = []
-    legacy_compounds = []
-    legacy_idioms = []
-    # STEP 1: parallel: tuples = pool.map(_get_word_splits_and_translation_from_gpt(sentence, from_lang))
-    # STEP 2 synch, process tuples
-    for index, sentence in enumerate(sentences):
-        print(f"Getting word splits for sentence {index+1}/{len(sentences)}")
-        sentence_terms, sentence_compounds, sentence_idioms, sentence_kanjis, sentence_hanzis = _get_word_splits_and_translation_from_gpt(
+def _calculate_sentence_translation_json(sentence: Term, from_lang, index):
+    print(f"Getting word splits for sentence {index+1}")
+    try:
+        sentence_terms, sentence_compounds, sentence_idioms = _get_word_splits_and_translation_from_gpt(
             sentence, from_lang)
         transliterate_terms(sentence_terms, from_lang)
 
-        legacy_terms += sentence_terms.copy()
-        legacy_compounds += sentence_compounds.copy()
-        legacy_idioms += sentence_idioms.copy()
+        legacy_terms_one_sentence = sentence_terms.copy()
+        legacy_compounds_one_sentence = sentence_compounds.copy()
+        legacy_idioms_one_sentence = sentence_idioms.copy()
 
         _add_position_to_terms(sentence.text, sentence_terms)
         sentence_translation_json = {
@@ -206,14 +193,38 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
         if sentence_idioms:
             sentence_translation_json["idioms"] = [
                 i.__dict__ for i in sentence_idioms]
-        if sentence_kanjis:
-            sentence_translation_json["kanjis"] = [
-                k.__dict__ for k in sentence_kanjis]
-        if sentence_hanzis:
-            sentence_translation_json["hanzis"] = [
-                h.__dict__ for h in sentence_hanzis]
-        sentence_translation_jsons.append(sentence_translation_json)
+        
+        return sentence_translation_json, legacy_terms_one_sentence, legacy_compounds_one_sentence, legacy_idioms_one_sentence
+    except Exception as e:
+        print(f"Error getting word splits for sentence {index+1}. Moving on. Error: {e}")
+        return None, None, None, None
 
+
+def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from_lang) -> tuple[list[Term], list[Compound], list[Compound]]:
+    sentence_translation_jsons = len(sentences)*[None]
+    legacy_terms = len(sentences)*[None]
+    legacy_compounds = len(sentences)*[None]
+    legacy_idioms = len(sentences)*[None]
+    # STEP 1: parallel: tuples = pool.map(_get_word_splits_and_translation_from_gpt(sentence, from_lang))
+    # STEP 2 synch, process tuples
+
+    with ThreadPoolExecutor(max_workers=len(sentences)) as executor:
+        #for index, sentence in enumerate(sentences):
+        future_to_translation_json = {executor.submit(_calculate_sentence_translation_json, sentence, from_lang, index): 
+                                      (sentence, from_lang, index) for index, sentence in enumerate(sentences)}
+        for future in as_completed(future_to_translation_json):
+            sentence, from_lang, index = future_to_translation_json[future]
+            print(f"Got word splits for sentence {index+1}/{len(sentences)}")
+            sentence_translation_json, legacy_terms_one_sentence, legacy_compounds_one_sentence, legacy_idioms_one_sentence = future.result()
+
+            sentence_translation_jsons[index] = sentence_translation_json
+            legacy_terms[index] = legacy_terms_one_sentence
+            legacy_compounds[index] = legacy_compounds_one_sentence
+            legacy_idioms[index] = legacy_idioms_one_sentence
+
+    legacy_terms = list(itertools.chain.from_iterable(legacy_terms))
+    legacy_compounds = list(itertools.chain.from_iterable(legacy_compounds))
+    legacy_idioms = list(itertools.chain.from_iterable(legacy_idioms))
     return sentence_translation_jsons, legacy_terms, legacy_compounds, legacy_idioms
 
 
