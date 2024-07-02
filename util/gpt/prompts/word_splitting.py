@@ -31,7 +31,7 @@ Return in json format like so (omit empty fields):
 
 Give me the word wise translation (every single word). Translate every word only once.
 Give word_type for every word. For adjectives include if they are ii- or na-adjectives
-Split auxiliary adjectives off of the words they are attached to.
+Do not split auxiliary adjectives off of the words they are attached to, or off of each other.
 
 If two or more words make up a compound verb add it in the "compounds" section.
 If a word has one or more auxiliary adjective attached, add this in the "compounds" section.
@@ -39,8 +39,7 @@ A particle plus another word can never be a compound!
 Add the "compound_id" to all words, that are part of the compound.
 
 If a word is written in kanjis, add them to the "kanjis" list with most common on readings and kun readings and most common meanings. 
-Never write kanjis that are not contained in "{text}"!!
-Never write kanjis that are not contained in "{text}"!!
+Never write kanjis that are not in "{text}"!!
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
@@ -104,6 +103,9 @@ def get_gpt_word_splits(text: str, from_lang: str) -> str:
             result_json = (json.loads(response))
         except json.decoder.JSONDecodeError:
             print("Could not parse json. Trying again.")
+            continue
+        except Exception as e:
+            print(f"Error getting word splits from gpt: {e}")
             continue
     clean_result_json(text, result_json, from_lang)
     return result_json

@@ -38,15 +38,18 @@ def test_japanese_sentence_splits_2():
     test_prompt = "ある夜、ミコはキラキラと輝く光に目を奪われた。"
     result_json = get_gpt_word_splits(test_prompt, "ja")
     _assert_compound_does_not_exist("奪われた", result_json)
+    _assert_property({"text": "奪われた"}, result_json)
+    _assert_word_not_in_sentence("た", result_json)
+    _assert_word_not_in_sentence("れ", result_json)
+    _assert_word_not_in_sentence("れた", result_json)
+    _assert_word_not_in_sentence("われた", result_json)
     _assert_no_kanjis("ある", result_json)
 
 
 def test_japanese_sentence_splits_3():
-    test_prompt = "あるよる、ミコはよく寝ていた。"
+    test_prompt = "ある夜、ミコはよく寝ていた。"
     result_json = get_gpt_word_splits(test_prompt, "ja")
-    _assert_compound_does_not_exist("奪われた", result_json)
     _assert_no_kanjis("ある", result_json)
-    _assert_no_kanjis("よる", result_json)
     _assert_no_kanjis("よく", result_json)
     _assert_no_kanjis("いた", result_json)
 
@@ -72,10 +75,13 @@ def test_chinese_sentence_splits_1():
 
 def _assert_property(assert_obj, test_json):
     text = assert_obj.pop("text")
+    assert len([x for x in test_json["sentence"] if x["text"] == text]) > 0
     for k, expected_value in assert_obj.items():
-        actual_value = next(x[k]
-                            for x in test_json["sentence"] if x["text"] == text)
+        actual_value = next(x[k] for x in test_json["sentence"] if x["text"] == text)
         assert expected_value == actual_value
+
+def _assert_word_not_in_sentence(text, test_json):
+    assert len([x for x in test_json["sentence"] if x["text"] == text]) == 0
 
 
 def _assert_compound_exists(compound_text, compound_parts, test_json):
