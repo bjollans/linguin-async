@@ -47,7 +47,7 @@ class Term:
     hanzis: list[Hanzi] = None
 
     def to_dict(self):
-        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v})
+        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v != None})
 
 
 @dataclass
@@ -182,6 +182,8 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
     legacy_terms = []
     legacy_compounds = []
     legacy_idioms = []
+    # STEP 1: parallel: tuples = pool.map(_get_word_splits_and_translation_from_gpt(sentence, from_lang))
+    # STEP 2 synch, process tuples
     for index, sentence in enumerate(sentences):
         print(f"Getting word splits for sentence {index+1}/{len(sentences)}")
         sentence_terms, sentence_compounds, sentence_idioms, sentence_kanjis, sentence_hanzis = _get_word_splits_and_translation_from_gpt(

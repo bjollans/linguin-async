@@ -29,7 +29,7 @@ Return in json format like so (omit empty fields):
         return f"""Given this sentence:
 {text}
 
-Give me the word wise translation (every single word).
+Give me the word wise translation (every single word). Translate every word only once.
 Give word_type for every word. For adjectives include if they are ii- or na-adjectives
 Split auxiliary adjectives off of the words they are attached to.
 
@@ -38,7 +38,9 @@ If a word has one or more auxiliary adjective attached, add this in the "compoun
 A particle plus another word can never be a compound!
 Add the "compound_id" to all words, that are part of the compound.
 
-If a word contains kanjis, add it to the "kanjis" list with most common on readings and kun readings and most common meanings. If there are no kanjis, do not add the kanjis list.
+If a word is written in kanjis, add them to the "kanjis" list with most common on readings and kun readings and most common meanings. 
+Never write kanjis that are not contained in "{text}"!!
+Never write kanjis that are not contained in "{text}"!!
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):

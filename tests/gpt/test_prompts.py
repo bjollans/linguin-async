@@ -38,6 +38,17 @@ def test_japanese_sentence_splits_2():
     test_prompt = "ある夜、ミコはキラキラと輝く光に目を奪われた。"
     result_json = get_gpt_word_splits(test_prompt, "ja")
     _assert_compound_does_not_exist("奪われた", result_json)
+    _assert_no_kanjis("ある", result_json)
+
+
+def test_japanese_sentence_splits_3():
+    test_prompt = "あるよる、ミコはよく寝ていた。"
+    result_json = get_gpt_word_splits(test_prompt, "ja")
+    _assert_compound_does_not_exist("奪われた", result_json)
+    _assert_no_kanjis("ある", result_json)
+    _assert_no_kanjis("よる", result_json)
+    _assert_no_kanjis("よく", result_json)
+    _assert_no_kanjis("いた", result_json)
 
 def test_german_sentence_splits_1():
     test_prompt = "Nach langem Überlegen tauchte sie in der Nachbarschaft auf"
@@ -100,6 +111,10 @@ def _assert_kanji(text, kanji_text, on, kun, meaning, test_json):
     assert on in kanji["on"]
     assert kun in kanji["kun"]
     assert meaning in kanji["meaning"]
+
+
+def _assert_no_kanjis(text, test_json):
+    assert len([x for x in test_json["sentence"] if x["text"] == text and "kanjis" in x]) == 0
 
 def _assert_hanzi(text, hanzi_text, meaning, test_json):
     hanzi_list = next(x["hanzis"] for x in test_json["sentence"] if x["text"] == text)
