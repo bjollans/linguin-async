@@ -54,13 +54,15 @@ Give word_type for every word.
 Give the Gender for nouns.
 Give the case for nouns, articles, adjectives and verbs.
 
-If two or more words make up a compound verb add it in the "compounds" section.
+If there is a compound verb add it in the "compounds" section.
 A compound must have multiple words!
 Add the "compound_id" to all words, that are part of the compound.
 
-If multiple words make up a common phrase or idiom, add it in the "idioms" section.
+If there is a common phrase or idiom, add it in the "idioms" section.
 Add the "idiom_id" to all words, that are part of the compound!! Do not leave any word out.
 An idiom must have multiple words!
+
+A word can be part of both a compound and an idiom at the same time.
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):

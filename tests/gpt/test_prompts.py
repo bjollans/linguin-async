@@ -52,6 +52,7 @@ def test_german_sentence_splits_2():
     test_prompt = "Er sagte seinem Sohn, er solle nicht um den heißen Brei herum reden."
     result_json = get_gpt_word_splits(test_prompt, "de")
     _assert_idiom_exists("um den heißen Brei herum reden", ["um", "den", "heißen", "Brei", "herum", "reden"], result_json)
+    _assert_compound_does_not_exist("sagte solle", result_json)
 
 def test_chinese_sentence_splits_1():
     test_prompt = "他的演讲已经很精彩了，最后那句名言更是画龙点睛。"
@@ -79,6 +80,8 @@ def _assert_compound_exists(compound_text, compound_parts, test_json):
 
 
 def _assert_compound_does_not_exist(compound_text, test_json):
+    if "compounds" not in test_json: 
+        return
     assert len([x["text"] for x in test_json["compounds"]
                if x["text"] == compound_text]) == 0
 
