@@ -29,9 +29,10 @@ class Term:
     gender: str = None
     compound_id: str = None
     idiom_id: str = None
+    kanjis: list[str] = None
 
     def to_dict(self):
-        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None})
+        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v})
 
 
 @dataclass
@@ -39,6 +40,13 @@ class Compound:
     id: str
     text: str
     translation: str = None
+
+@dataclass
+class Kanji:
+    text: str
+    on: str
+    kun: str
+    meaning: str = None
 
 
 def get_and_update_word_splits(text, from_lang):
@@ -119,8 +127,6 @@ def translate_sentences(terms: list[Term], from_lang: str, to_lang: str):
 
 
 def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
-    response_json = {}
-    tries = 0
     response_json = get_gpt_word_splits(sentence.text, from_lang)
     sentence_terms = [Term(text=word["text"], translation=word["translation"],
                            gender=word["gender"] if "gender" in word else None,
@@ -128,6 +134,7 @@ def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
                            word_type=word["word_type"] if "word_type" in word else None,
                            compound_id=word["compound_id"] if "compound_id" in word else None,
                            idiom_id=word["idiom_id"] if "idiom_id" in word else None,
+                           kanjis=word["kanjis"] if "kanjis" in word else None,
                            ) for word in response_json["sentence"]]
     sentence_compounds = []
     if "compounds" in response_json and len(response_json["compounds"]) > 0:
@@ -143,8 +150,6 @@ def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
             text=word["text"],
             translation=word["translation"]
         ) for word in response_json["idioms"]]
-    remove_compounds_with_bad_amount_of_words(
-        sentence_terms, sentence_compounds, sentence_idioms)
     return sentence_terms, sentence_compounds, sentence_idioms
 
 
@@ -174,25 +179,6 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
     return sentence_translation_jsons, legacy_terms, legacy_compounds, legacy_idioms
 
 
-def remove_compounds_with_bad_amount_of_words(terms, compounds, idioms):
-    compound_id_count = defaultdict(lambda: 0)
-    idiom_id_count = defaultdict(lambda: 0)
-    for term in terms:
-        if term.compound_id:
-            compound_id_count[term.compound_id] += 1
-        if term.idiom_id:
-            idiom_id_count[term.idiom_id] += 1
-    for term in terms:
-        if term.compound_id and compound_id_count[term.compound_id] <= 1:
-            term.compound_id = None
-    for compound in compounds:
-        if compound_id_count[compound.id] <= 1:
-            compounds.remove(compound)
-    for idiom in idioms:
-        if idiom_id_count[idiom.id] <= 1:
-            idioms.remove(idiom)
-
-
 def get_translation_json(text, from_lang) -> dict:
     sentences: list[Term] = get_sentences(text)
     translate_sentences(sentences, from_lang, "en")
@@ -204,9 +190,9 @@ def get_translation_json(text, from_lang) -> dict:
     _add_position_to_terms(text, legacy_word_groups)
 
     return {
-        "terms": [w.__dict__ for w in legacy_word_groups],
+        "terms": [w.to_dict() for w in legacy_word_groups],
         "compounds": [c.__dict__ for c in legacy_compounds],
         "idioms": [i.__dict__ for i in legacy_idioms],
-        "sentences": [s.__dict__ for s in sentences],
+        "sentences": [s.to_dict() for s in sentences],
         "sentenceTranslationJsons": sentence_translation_jsons,
     }

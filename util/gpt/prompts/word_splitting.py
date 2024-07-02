@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 from util.gpt.gpt import single_chat_completion
 
@@ -22,7 +23,26 @@ Add the "idiom_id" to all words that are part of the idiom.
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
 """ + '\'{"sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","compound_id": "id of the compound", "idiom_id":"id of the idiom"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...]}\''
+    
 
+    if from_lang == "ja":
+        return f"""Given this sentence:
+{text}
+
+Give me the word wise translation (every single word).
+Give word_type for every word. For adjectives include if they are ii- or na-adjectives
+Split auxiliary adjectives off of the words they are attached to.
+
+If two or more words make up a compound verb add it in the "compounds" section.
+If a word has one or more auxiliary adjective attached, add this in the "compounds" section.
+A particle plus another word can never be a compound!
+Add the "compound_id" to all words, that are part of the compound.
+
+If a word contains kanjis, add it to the "kanjis" list. Also add the kanjis to the "kanjis" section, with most common on and kun readings and most common meanings.
+
+For the dictionary_translation, imagine the word is standing alone.
+Return in json format like so (omit empty fields):
+""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle,ii-adjective,na-adjective", "gender": "gender of the noun","compound_id": "id of the compound", "kanjis":["kanji 1", "kanji 2"]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "kanjis":[{"text":"kanji written","on":"most common on readings","kun":"most common kun readings","meaning":"most common meanings"}]}\''
 
 def get_gpt_word_splits(text: str, from_lang: str) -> str:
     prompt = get_gpt_word_splits_prompt(text, from_lang)
@@ -39,13 +59,46 @@ def get_gpt_word_splits(text: str, from_lang: str) -> str:
         except json.decoder.JSONDecodeError:
             print("Could not parse json. Trying again.")
             continue
-    clean_result_json(result_json, from_lang)
+    clean_result_json(text, result_json, from_lang)
     return result_json
 
 
-def clean_result_json(result_json,from_lang):
+def clean_result_json(text, result_json, from_lang):
     if from_lang == "hi":
         for entry in result_json["sentence"]:
             entry["translation"] = entry.pop("dictionary_translation")
             if entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
+
+    remove_words_not_in_sentence(text, result_json)
+    remove_compounds_with_one_word(result_json)
+
+
+def remove_words_not_in_sentence(text, result_json):
+    for i in range(len(result_json["sentence"])-1,-1,-1):
+        if result_json["sentence"][i]["text"] not in text:
+            del result_json["sentence"][i]
+
+def remove_compounds_with_one_word(result_json):
+    compound_id_count = defaultdict(lambda: 0)
+    idiom_id_count = defaultdict(lambda: 0)
+    terms = result_json["sentence"]
+    compounds = result_json["compounds"] if "compounds" in result_json else []
+    idioms = result_json["idioms"] if "idioms" in result_json else []
+    for term in terms:
+        if "compound_id" in term:
+            compound_id_count[term["compound_id"]] += 1
+        if "idiom_id" in term:
+            idiom_id_count[term["idiom_id"]] += 1
+    for term in terms:
+        if "compound_id" in term and compound_id_count[term["compound_id"]] <= 1:
+            del term["compound_id"]
+    for term in terms:
+        if "idiom_id" in term and idiom_id_count[term["idiom_id"]] <= 1:
+            del term["idiom_id"]
+    for i in range(len(compounds)-1,-1,-1):
+        if compound_id_count[compounds[i]["id"]] <= 1:
+            compounds.remove(compounds[i])
+    for i in range(len(idioms)-1,-1,-1):
+        if idiom_id_count[idioms[i]["id"]] <= 1:
+            idioms.remove(idioms[i])
