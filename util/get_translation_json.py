@@ -30,6 +30,7 @@ class Term:
     compound_id: str = None
     idiom_id: str = None
     kanjis: list[str] = None
+    hanzis: list[str] = None
 
     def to_dict(self):
         return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v})
@@ -41,11 +42,18 @@ class Compound:
     text: str
     translation: str = None
 
+
 @dataclass
 class Kanji:
     text: str
     on: str
     kun: str
+    meaning: str = None
+
+
+@dataclass
+class Hanzi:
+    text: str
     meaning: str = None
 
 
@@ -135,6 +143,7 @@ def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
                            compound_id=word["compound_id"] if "compound_id" in word else None,
                            idiom_id=word["idiom_id"] if "idiom_id" in word else None,
                            kanjis=word["kanjis"] if "kanjis" in word else None,
+                           hanzis=word["hanzis"] if "hanzis" in word else None,
                            ) for word in response_json["sentence"]]
     sentence_compounds = []
     if "compounds" in response_json and len(response_json["compounds"]) > 0:
@@ -150,7 +159,21 @@ def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
             text=word["text"],
             translation=word["translation"]
         ) for word in response_json["idioms"]]
-    return sentence_terms, sentence_compounds, sentence_idioms
+    sentence_kanjis = []
+    if "kanjis" in response_json and len(response_json["kanjis"]) > 0:
+        sentence_kanjis += [Kanji(
+            text=word["text"],
+            on=word["on"],
+            kun=word["kun"],
+            meaning=word["meaning"]
+        ) for word in response_json["kanjis"]]
+    sentence_hanzis = []
+    if "hanzis" in response_json and len(response_json["hanzis"]) > 0:
+        sentence_hanzis += [Hanzi(
+            text=word["text"],
+            meaning=word["meaning"]
+        ) for word in response_json["hanzis"]]
+    return sentence_terms, sentence_compounds, sentence_idioms, sentence_kanjis, sentence_hanzis
 
 
 def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from_lang) -> tuple[list[Term], list[Compound], list[Compound]]:
@@ -160,7 +183,7 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
     legacy_idioms = []
     for index, sentence in enumerate(sentences):
         print(f"Getting word splits for sentence {index+1}/{len(sentences)}")
-        sentence_terms, sentence_compounds, sentence_idioms = _get_word_splits_and_translation_from_gpt(
+        sentence_terms, sentence_compounds, sentence_idioms, sentence_kanjis, sentence_hanzis = _get_word_splits_and_translation_from_gpt(
             sentence, from_lang)
         transliterate_terms(sentence_terms, from_lang)
 
@@ -169,12 +192,24 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
         legacy_idioms += sentence_idioms.copy()
 
         _add_position_to_terms(sentence.text, sentence_terms)
-        sentence_translation_jsons.append({
+        sentence_translation_json = {
             "terms": [t.to_dict() for t in sentence_terms],
-            "compounds": [c.__dict__ for c in sentence_compounds],
-            "idioms": [i.__dict__ for i in sentence_idioms],
             "wholeSentence": sentence.to_dict(),
-        })
+        }
+
+        if sentence_compounds:
+            sentence_translation_json["compounds"] = [
+                c.__dict__ for c in sentence_compounds]
+        if sentence_idioms:
+            sentence_translation_json["idioms"] = [
+                i.__dict__ for i in sentence_idioms]
+        if sentence_kanjis:
+            sentence_translation_json["kanjis"] = [
+                k.__dict__ for k in sentence_kanjis]
+        if sentence_hanzis:
+            sentence_translation_json["hanzis"] = [
+                h.__dict__ for h in sentence_hanzis]
+        sentence_translation_jsons.append(sentence_translation_json)
 
     return sentence_translation_jsons, legacy_terms, legacy_compounds, legacy_idioms
 

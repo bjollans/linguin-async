@@ -53,6 +53,12 @@ def test_german_sentence_splits_2():
     result_json = get_gpt_word_splits(test_prompt, "de")
     _assert_idiom_exists("um den heißen Brei herum reden", ["um", "den", "heißen", "Brei", "herum", "reden"], result_json)
 
+def test_chinese_sentence_splits_1():
+    test_prompt = "他的演讲已经很精彩了，最后那句名言更是画龙点睛。"
+    result_json = get_gpt_word_splits(test_prompt, "zh")
+    _assert_property({"text": "画龙点睛", "translation": "finishing touch"}, result_json)
+    _assert_hanzi("已","already", result_json)
+    _assert_not_hanzi("他", result_json)
 
 def _assert_property(assert_obj, test_json):
     text = assert_obj.pop("text")
@@ -92,3 +98,10 @@ def _assert_kanji(kanji_text, on, kun, meaning, test_json):
     assert on in kanji["on"]
     assert kun in kanji["kun"]
     assert meaning in kanji["meaning"]
+
+def _assert_hanzi(hanzi_text, meaning, test_json):
+    hanzi = next(x for x in test_json["hanzis"] if x["text"] == hanzi_text)
+    assert meaning in hanzi["meaning"]
+
+def _assert_not_hanzi(hanzi_text, test_json):
+    assert len([x for x in test_json["hanzis"] if x["text"] == hanzi_text]) == 0
