@@ -30,10 +30,8 @@ def test_japanese_sentence_splits_1():
     _assert_property({"text": "は", "translation": "topic marker"}, result_json)
     _assert_compound_exists("美しくなかった", ["美しく", "なかった"], result_json)
     _assert_compound_does_not_exist("見ると", result_json)
-    _assert_property({"text": "見る", "kanjis": ["見"]}, result_json)
-    _assert_property({"text": "間近", "kanjis": ["間", "近"]}, result_json)
-    _assert_kanji("間", "カン", "あいだ", "interval", result_json)
-    _assert_kanji("見", "ケン", "み", "see", result_json)
+    _assert_kanji("間近","間", "カン", "あいだ", "interval", result_json)
+    _assert_kanji("見る","見", "ケン", "み", "see", result_json)
 
 
 def test_japanese_sentence_splits_2():
@@ -58,8 +56,8 @@ def test_chinese_sentence_splits_1():
     test_prompt = "他的演讲已经很精彩了，最后那句名言更是画龙点睛。"
     result_json = get_gpt_word_splits(test_prompt, "zh")
     _assert_property({"text": "画龙点睛", "translation": "finishing touch"}, result_json)
-    _assert_hanzi("已","already", result_json)
-    _assert_not_hanzi("他", result_json)
+    _assert_hanzi("已经","已","already", result_json)
+    _assert_no_hanzis("他", result_json)
 
 def _assert_property(assert_obj, test_json):
     text = assert_obj.pop("text")
@@ -96,15 +94,17 @@ def _assert_idiom_exists(idiom_text, idiom_parts, test_json):
         assert idiom_part_jsons[i]["idiom_id"] == idiom_part_jsons[i + 1]["idiom_id"]
 
 
-def _assert_kanji(kanji_text, on, kun, meaning, test_json):
-    kanji = next(x for x in test_json["kanjis"] if x["text"] == kanji_text)
+def _assert_kanji(text, kanji_text, on, kun, meaning, test_json):
+    kanji_list = next(x["kanjis"] for x in test_json["sentence"] if x["text"] == text)
+    kanji = next(x for x in kanji_list if x["text"] == kanji_text)
     assert on in kanji["on"]
     assert kun in kanji["kun"]
     assert meaning in kanji["meaning"]
 
-def _assert_hanzi(hanzi_text, meaning, test_json):
-    hanzi = next(x for x in test_json["hanzis"] if x["text"] == hanzi_text)
+def _assert_hanzi(text, hanzi_text, meaning, test_json):
+    hanzi_list = next(x["hanzis"] for x in test_json["sentence"] if x["text"] == text)
+    hanzi = next(x for x in hanzi_list if x["text"] == hanzi_text)
     assert meaning in hanzi["meaning"]
 
-def _assert_not_hanzi(hanzi_text, test_json):
-    assert len([x for x in test_json["hanzis"] if x["text"] == hanzi_text]) == 0
+def _assert_no_hanzis(text, test_json):
+    assert len([x for x in test_json["sentence"] if x["text"] == text and "hanzis" in x]) == 0

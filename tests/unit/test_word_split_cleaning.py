@@ -1,4 +1,4 @@
-from util.gpt.prompts.word_splitting import remove_compounds_with_one_word, remove_words_not_in_sentence
+from util.gpt.prompts.word_splitting import remove_compounds_that_are_same_as_one_word, remove_compounds_with_one_or_less_words_or_compounds, remove_words_not_in_sentence
 
 
 def test_remove_compounds_with_one_word_removes_single_word_compounds_and_idioms():
@@ -76,7 +76,7 @@ def test_remove_compounds_with_one_word_removes_single_word_compounds_and_idioms
             {"id": "6"},
         ]
     }
-    remove_compounds_with_one_word(test_json)
+    remove_compounds_with_one_or_less_words_or_compounds(test_json)
     assert test_json == expected_result_json
 
 
@@ -115,3 +115,47 @@ def test_remove_words_not_in_sentence():
         ]}
     remove_words_not_in_sentence(test_text, test_json)
     assert test_json == expected_result_json
+
+
+def test_remove_compounds_that_are_same_as_one_word_no_other_compound():
+    test_json = {
+        "sentence": [
+            {"text": "を"},
+            {"text": "奪われた", "compound_id": "1"},
+        ],
+        "compounds": [
+            {"id":"1","text": "奪われた"},
+        ]}
+    expected_result_json = {
+        "sentence": [
+            {"text": "を"},
+            {"text": "奪われた"},
+        ]}
+    remove_compounds_that_are_same_as_one_word(test_json)
+    assert expected_result_json == test_json
+
+
+
+
+def test_remove_compounds_that_are_same_as_one_word():
+    test_json = {
+        "sentence": [
+            {"text": "目", "compound_id": "1"},
+            {"text": "を", "compound_id": "1"},
+            {"text": "奪われた", "compound_id": "2"},
+        ],
+        "compounds": [
+            {"id":"1","text": "目 を"},
+            {"id":"2","text": "奪われた"},
+        ]}
+    expected_result_json = {
+        "sentence": [
+            {"text": "目", "compound_id": "1"},
+            {"text": "を", "compound_id": "1"},
+            {"text": "奪われた"},
+        ],
+        "compounds": [
+            {"id":"1","text": "目 を"},
+        ]}
+    remove_compounds_that_are_same_as_one_word(test_json)
+    assert expected_result_json == test_json

@@ -19,31 +19,6 @@ from util.word_splitter import WordSplitter
 
 
 @dataclass
-class Term:
-    text: str
-    position: int = -1
-    translation: str = None
-    transliteration: str = None
-    case: str = None
-    word_type: str = None
-    gender: str = None
-    compound_id: str = None
-    idiom_id: str = None
-    kanjis: list[str] = None
-    hanzis: list[str] = None
-
-    def to_dict(self):
-        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v})
-
-
-@dataclass
-class Compound:
-    id: str
-    text: str
-    translation: str = None
-
-
-@dataclass
 class Kanji:
     text: str
     on: str
@@ -55,6 +30,32 @@ class Kanji:
 class Hanzi:
     text: str
     meaning: str = None
+
+
+@dataclass
+class Term:
+    text: str
+    position: int = -1
+    translation: str = None
+    transliteration: str = None
+    case: str = None
+    word_type: str = None
+    gender: str = None
+    compound_id: str = None
+    idiom_id: str = None
+    kanjis: list[Kanji] = None
+    hanzis: list[Hanzi] = None
+
+    def to_dict(self):
+        return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v})
+
+
+@dataclass
+class Compound:
+    id: str
+    text: str
+    translation: str = None
+
 
 
 def get_and_update_word_splits(text, from_lang):

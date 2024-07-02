@@ -38,11 +38,11 @@ If a word has one or more auxiliary adjective attached, add this in the "compoun
 A particle plus another word can never be a compound!
 Add the "compound_id" to all words, that are part of the compound.
 
-If a word contains kanjis, add it to the "kanjis" list. Also add the kanjis to the "kanjis" section, with most common on and kun readings and most common meanings.
+If a word contains kanjis, add it to the "kanjis" list with most common on readings and kun readings and most common meanings. If there are no kanjis, do not add the kanjis list.
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
-""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle,ii-adjective,na-adjective","compound_id": "id of the compound", "kanjis":["kanji 1", "kanji 2"]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "kanjis":[{"text":"kanji written","on":"most common on readings","kun":"most common kun readings","meaning":"most common meanings"}]}\''
+""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle,ii-adjective,na-adjective","compound_id": "id of the compound", "kanjis":[{"text":"kanji written","on":"most common on readings","kun":"most common kun readings","meaning":"most common meanings"},...]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...]}\''
     
 
     if from_lang == "de" or from_lang == "el":
@@ -82,11 +82,11 @@ If a word has one or more auxiliary adjective attached, add this in the "compoun
 A particle plus another word can never be a compound!
 Add the "compound_id" to all words, that are part of the compound.
 
-If a word is made up of multiple characters, add them in hanzis and under the hanzis section. Do not do this for words with only one character!!
+If a word is made up of multiple characters, add them in hanzis. Do not do this for words with only one character!!
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
-""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, noun","compound_id": "id of the compound", "hanzis":["hanzi 1", "hanzi 2"]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...],"idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...], "hanzis":[{"text":"hanzi written","meaning":"meaning of the hanzi alone"}]}\''
+""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, noun","compound_id": "id of the compound", "hanzis":[{"text":"hanzi 1 written","meaning":"meaning of the hanzi alone"}, ...]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...]}\''
 
 def get_gpt_word_splits(text: str, from_lang: str) -> str:
     prompt = get_gpt_word_splits_prompt(text, from_lang)
@@ -115,7 +115,7 @@ def clean_result_json(text, result_json, from_lang):
                 del entry["context_translation"]
 
     remove_words_not_in_sentence(text, result_json)
-    remove_compounds_with_one_word(result_json)
+    remove_compounds_with_one_or_less_words_or_compounds(result_json)
 
 
 def remove_words_not_in_sentence(text, result_json):
@@ -123,7 +123,7 @@ def remove_words_not_in_sentence(text, result_json):
         if result_json["sentence"][i]["text"] not in text:
             del result_json["sentence"][i]
 
-def remove_compounds_with_one_word(result_json):
+def remove_compounds_with_one_or_less_words_or_compounds(result_json):
     compound_id_count = defaultdict(lambda: 0)
     idiom_id_count = defaultdict(lambda: 0)
     terms = result_json["sentence"]
@@ -146,3 +146,13 @@ def remove_compounds_with_one_word(result_json):
     for i in range(len(idioms)-1,-1,-1):
         if idiom_id_count[idioms[i]["id"]] <= 1:
             idioms.remove(idioms[i])
+
+
+def remove_compounds_that_are_same_as_one_word(result_json):
+    if "compounds" not in result_json:
+        return
+    term_strs = [x["text"] for x in result_json["sentence"]]
+    result_json["compounds"] = [x for x in result_json["compounds"] if x["text"] not in term_strs]
+    if len(result_json["compounds"]) == 0:
+        del result_json["compounds"]
+    remove_compounds_with_one_or_less_words_or_compounds(result_json)
