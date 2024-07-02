@@ -43,6 +43,28 @@ If a word contains kanjis, add it to the "kanjis" list. Also add the kanjis to t
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
 """ + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle,ii-adjective,na-adjective", "gender": "gender of the noun","compound_id": "id of the compound", "kanjis":["kanji 1", "kanji 2"]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "kanjis":[{"text":"kanji written","on":"most common on readings","kun":"most common kun readings","meaning":"most common meanings"}]}\''
+    
+
+    if from_lang == "de":
+        return f"""Given this sentence:
+{text}
+
+Give me the word wise translation (every single word).
+Give word_type for every word.
+Give the Gender for nouns.
+Give the case for nouns, articles and verbs.
+
+If two or more words make up a compound verb add it in the "compounds" section.
+A compound must have multiple words!
+Add the "compound_id" to all words, that are part of the compound.
+
+If multiple words make up a common phrase or idiom, add it in the "idioms" section.
+Add the "idiom_id" to all words, that are part of the compound!! Do not leave any word out.
+An idiom must have multiple words!
+
+For the dictionary_translation, imagine the word is standing alone.
+Return in json format like so (omit empty fields):
+""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, adjective, noun","gender": "gender of the noun","case":"what case the word is in","compound_id": "id of the compound"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...], }\''
 
 def get_gpt_word_splits(text: str, from_lang: str) -> str:
     prompt = get_gpt_word_splits_prompt(text, from_lang)

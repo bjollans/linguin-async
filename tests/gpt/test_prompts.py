@@ -41,6 +41,18 @@ def test_japanese_sentence_splits_2():
     result_json = get_gpt_word_splits(test_prompt, "ja")
     _assert_compound_does_not_exist("奪われた", result_json)
 
+def test_german_sentence_splits_1():
+    test_prompt = "Nach langem Überlegen tauchte sie in der Nachbarschaft auf"
+    result_json = get_gpt_word_splits(test_prompt, "de")
+    _assert_property({"text": "Überlegen", "case": "dative", "gender": "neuter"}, result_json)
+    _assert_compound_exists("tauchte auf", ["tauchte", "auf"], result_json)
+    _assert_property({"text": "der", "case": "dative"}, result_json)
+
+def test_german_sentence_splits_2():
+    test_prompt = "Er sagte seinem Sohn, er solle nicht um den heißen Brei herum reden."
+    result_json = get_gpt_word_splits(test_prompt, "de")
+    _assert_idiom_exists("um den heißen Brei herum reden", ["um", "den", "heißen", "Brei", "herum", "reden"], result_json)
+
 
 def _assert_property(assert_obj, test_json):
     text = assert_obj.pop("text")
