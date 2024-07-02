@@ -7,6 +7,7 @@ import uuid
 from devatrans import DevaTrans
 
 from util.gpt.gpt import single_chat_completion
+from util.gpt.prompts.word_splitting import get_gpt_word_splits
 import util.gpt.word_operations as gpt
 from util.translation import translate_text
 from util.transliteration.el import get_greek_transliteration
@@ -117,36 +118,10 @@ def translate_sentences(terms: list[Term], from_lang: str, to_lang: str):
         term.translation = translate_text(term.text, from_lang, to_lang)
 
 
-def _get_gpt_word_splits_prompt(text: str) -> str:
-    return f"""Given this sentence:
-{text}
-
-Give me the word wise translation (every single word, do not leave out any words).
-Give word_type for every word.
-Only give the "case" and "gender" where relevant.
-If a word is part of a compound verb add it in the "compounds" section.
-If a word is part of a correlative cojunction add it in the "compounds" section.
-Add the "compound_id" to all words, that are part of the compound. Only add verbs to compound verbs.
-If a word is part of an idiom or figure of speech, add it to the "idioms" section. Add the "idiom_id" to all words that are part of the idiom.
-For the `translation` part, pretend the word or compound is standing alone. Return in json format like so (omit empty fields):
-""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle","case":"case of the word", "gender": "gender of the word","compound_id": "id of the compound", "idiom_id":"id of the idiom"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...]}\''
-
-
-def _get_word_splits_and_translation_from_gpt(sentence):
+def _get_word_splits_and_translation_from_gpt(sentence, from_lang):
     response_json = {}
     tries = 0
-    while not "sentence" in response_json:
-        tries += 1
-        if tries > 5:
-            raise Exception("Could not get word splits from gpt")
-        prompt = _get_gpt_word_splits_prompt(sentence.text)
-        response = single_chat_completion(
-            prompt, type="json_object", max_tokens=2048, temperature=0, top_p=0.2)
-        try:
-            response_json = (json.loads(response))
-        except json.decoder.JSONDecodeError:
-            print("Could not parse json. Trying again.")
-            continue
+    response_json = get_gpt_word_splits(sentence.text, from_lang)
     sentence_terms = [Term(text=word["text"], translation=word["translation"],
                            gender=word["gender"] if "gender" in word else None,
                            case=word["case"] if "case" in word else None,
@@ -181,7 +156,7 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
     for index, sentence in enumerate(sentences):
         print(f"Getting word splits for sentence {index+1}/{len(sentences)}")
         sentence_terms, sentence_compounds, sentence_idioms = _get_word_splits_and_translation_from_gpt(
-            sentence)
+            sentence, from_lang)
         transliterate_terms(sentence_terms, from_lang)
 
         legacy_terms += sentence_terms.copy()
