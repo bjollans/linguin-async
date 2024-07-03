@@ -31,15 +31,14 @@ Return in json format like so (omit empty fields):
 
 Give me the word wise translation (every single word). Translate every word only once.
 Give word_type for every word. For adjectives include if they are ii- or na-adjectives
-Do not split auxiliary adjectives off of the words they are attached to, or off of each other.
+Do not split auxiliary adjectives off of the words they are attached to, or off of each other. Split auxiliary verbs off.
 
 If two or more words make up a compound verb add it in the "compounds" section.
 If a word has one or more auxiliary adjective attached, add this in the "compounds" section.
 A particle plus another word can never be a compound!
 Add the "compound_id" to all words, that are part of the compound.
 
-If a word is written in kanjis, add them to the "kanjis" list with most common on readings and kun readings and most common meanings. 
-Never write kanjis that are not in "{text}"!!
+If a word is written in kanjis, add them to the "kanjis" list with most common on readings and kun readings and most common meanings.
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
@@ -117,9 +116,23 @@ def clean_result_json(text, result_json, from_lang):
             entry["translation"] = entry.pop("dictionary_translation")
             if entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
+    if from_lang == "ja":
+        remove_non_existant_kanjis(text, result_json)
 
     remove_words_not_in_sentence(text, result_json)
     remove_compounds_with_one_or_less_words_or_compounds(result_json)
+
+
+def remove_non_existant_kanjis(text, result_json):
+    for entry in result_json["sentence"]:
+        if not "kanjis" in entry: continue
+        for i in range(len(entry["kanjis"])-1,-1,-1):
+            actual_kanji = entry["kanjis"][i]["text"]
+            if not actual_kanji in text:
+                del entry["kanjis"][i]
+        if len(entry["kanjis"]) == 0:
+            del entry["kanjis"]
+            
 
 
 def remove_words_not_in_sentence(text, result_json):

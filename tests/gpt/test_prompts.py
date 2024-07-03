@@ -25,10 +25,10 @@ def test_hindi_sentence_splits_2():
     _assert_compound_exists("जोर से", ["जोर", "से"], result_json)
 
 def test_japanese_sentence_splits_1():
-    test_prompt = "間近で見ると、それはもっと美しくなかった。"
+    test_prompt = "間近で見ると、それはもっと導いてくれた。"
     result_json = get_gpt_word_splits(test_prompt, "ja")
     _assert_property({"text": "は", "translation": "topic marker"}, result_json)
-    _assert_compound_exists("美しくなかった", ["美しく", "なかった"], result_json)
+    _assert_compound_exists("導いてくれた", ["導いて", "くれた"], result_json)
     _assert_compound_does_not_exist("見ると", result_json)
     _assert_kanji("間近","間", "カン", "あいだ", "interval", result_json)
     _assert_kanji("見る","見", "ケン", "み", "see", result_json)
@@ -52,6 +52,12 @@ def test_japanese_sentence_splits_3():
     _assert_no_kanjis("ある", result_json)
     _assert_no_kanjis("よく", result_json)
     _assert_no_kanjis("いた", result_json)
+
+
+def test_japanese_sentence_splits_4():
+    test_prompt = "毎日、毛糸玉で遊び、日向で昼寝をしていた。"
+    result_json = get_gpt_word_splits(test_prompt, "ja")
+    _assert_kanji("遊び","遊","ユ","あそ","play", result_json)
 
 def test_german_sentence_splits_1():
     test_prompt = "Nach langem Überlegen tauchte sie in der Nachbarschaft auf"

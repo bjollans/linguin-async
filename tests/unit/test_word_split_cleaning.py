@@ -1,4 +1,4 @@
-from util.gpt.prompts.word_splitting import remove_compounds_that_are_same_as_one_word, remove_compounds_with_one_or_less_words_or_compounds, remove_words_not_in_sentence
+from util.gpt.prompts.word_splitting import remove_compounds_that_are_same_as_one_word, remove_compounds_with_one_or_less_words_or_compounds, remove_non_existant_kanjis, remove_words_not_in_sentence
 
 
 def test_remove_compounds_with_one_word_removes_single_word_compounds_and_idioms():
@@ -124,7 +124,7 @@ def test_remove_compounds_that_are_same_as_one_word_no_other_compound():
             {"text": "奪われた", "compound_id": "1"},
         ],
         "compounds": [
-            {"id":"1","text": "奪われた"},
+            {"id": "1", "text": "奪われた"},
         ]}
     expected_result_json = {
         "sentence": [
@@ -135,8 +135,6 @@ def test_remove_compounds_that_are_same_as_one_word_no_other_compound():
     assert expected_result_json == test_json
 
 
-
-
 def test_remove_compounds_that_are_same_as_one_word():
     test_json = {
         "sentence": [
@@ -145,8 +143,8 @@ def test_remove_compounds_that_are_same_as_one_word():
             {"text": "奪われた", "compound_id": "2"},
         ],
         "compounds": [
-            {"id":"1","text": "目 を"},
-            {"id":"2","text": "奪われた"},
+            {"id": "1", "text": "目 を"},
+            {"id": "2", "text": "奪われた"},
         ]}
     expected_result_json = {
         "sentence": [
@@ -155,7 +153,39 @@ def test_remove_compounds_that_are_same_as_one_word():
             {"text": "奪われた"},
         ],
         "compounds": [
-            {"id":"1","text": "目 を"},
+            {"id": "1", "text": "目 を"},
         ]}
     remove_compounds_that_are_same_as_one_word(test_json)
+    assert expected_result_json == test_json
+
+
+def test_remove_non_existant_kanjis():
+    text = "毎日、毛糸玉で遊び、日向で昼寝をしていた。"
+    test_json = {
+        "sentence": [
+            {"text": "毎日", "kanjis": [{"text":"毎"}, {"text":"日"}]},
+            {"text": "毛糸玉", "kanjis": [{"text":"毛"}, {"text":"糸"}, {"text":"玉"}, {"text":"奪"}]},
+            {"text": "で"},
+            {"text": "遊び", "kanjis": [{"text":"遊"}]},
+            {"text": "日向", "kanjis": [{"text":"日"}, {"text":"向"}]},
+            {"text": "で"},
+            {"text": "昼寝", "kanjis": [{"text":"昼"}, {"text":"寝"}]},
+            {"text": "を", "kanjis": []},
+            {"text": "して", "kanjis": [{"text":"光"}, {"text":"輝"}]},
+            {"text": "いた", "kanjis": [{"text":"夜"}]},
+        ], }
+    expected_result_json = {
+        "sentence": [
+            {"text": "毎日", "kanjis": [{"text":"毎"}, {"text":"日"}]},
+            {"text": "毛糸玉", "kanjis": [{"text":"毛"}, {"text":"糸"}, {"text":"玉"}]},
+            {"text": "で"},
+            {"text": "遊び", "kanjis": [{"text":"遊"}]},
+            {"text": "日向", "kanjis": [{"text":"日"}, {"text":"向"}]},
+            {"text": "で"},
+            {"text": "昼寝", "kanjis": [{"text":"昼"}, {"text":"寝"}]},
+            {"text": "を"},
+            {"text": "して"},
+            {"text": "いた"},
+        ], }
+    remove_non_existant_kanjis(text, test_json)
     assert expected_result_json == test_json
