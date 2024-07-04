@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from util.audio.concatenate import concatenate_and_save_mp3, get_time_stamps
 from util.audio.generate import generate_audio_for_sentence, generate_audio_for_text
 import util.db as db
@@ -36,30 +37,35 @@ def get_file_name_for_word(lang, word):
 
 _local_word_audio_cache=[]
 
+def generate_audio_for_word(lang, word):
+    if lang+'-'+word in _local_word_audio_cache:
+        print(f"Audio for {word} already exists in local cache")
+        return
+    if db.file_exists(f"{get_file_name_for_word(lang, word)}.mp3", bucket="wordSound"):
+        print(f"Audio for {word} already exists in bucket")
+        _local_word_audio_cache.append(lang+'-'+word)
+        return
+    print(f"Generating audio for {word}")
+    file_name = get_file_name_for_word(lang, word)
+    audio_file = f"/tmp/{file_name}.mp3"
+    generate_audio_for_sentence(word, lang, audio_file)
+    try:
+        db.upload_audio_to_bucket(audio_file, f"{file_name}.mp3", bucket="wordSound")
+    except Exception as e:
+        if "The resource already exists" in str(e):
+            print(f"Audio for {word} already exists in bucket")
+        else:
+            raise e
+    os.remove(audio_file)
+    _local_word_audio_cache.append(word)
+
+
 def generate_audio_for_words_by_translation_json(story_translation_id):
     story_translation = db.get_story_translation_by_id(story_translation_id)
     lang = story_translation["targetLanguage"]
     translation_json = story_translation["translationJson"]
     words_to_record = [term["text"] for term in translation_json["terms"]]
 
-    for word in words_to_record:
-        if lang+'-'+word in _local_word_audio_cache:
-            print(f"Audio for {word} already exists in local cache")
-            continue
-        if db.file_exists(f"{get_file_name_for_word(lang, word)}.mp3", bucket="wordSound"):
-            print(f"Audio for {word} already exists in bucket")
-            _local_word_audio_cache.append(lang+'-'+word)
-            continue
-        print(f"Generating audio for {word}")
-        file_name = get_file_name_for_word(lang, word)
-        audio_file = f"/tmp/{file_name}.mp3"
-        generate_audio_for_sentence(word, lang, audio_file)
-        try:
-            db.upload_audio_to_bucket(audio_file, f"{file_name}.mp3", bucket="wordSound")
-        except Exception as e:
-            if "The resource already exists" in str(e):
-                print(f"Audio for {word} already exists in bucket")
-            else:
-                raise e
-        os.remove(audio_file)
-        _local_word_audio_cache.append(word)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        for word in words_to_record:
+            executor.submit(generate_audio_for_word, lang, word)
