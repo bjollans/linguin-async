@@ -1,4 +1,4 @@
-from tests.gpt.prompt_test_utils import assert_compound_exists, assert_property
+from tests.gpt.prompt_test_utils import assert_compound_does_not_exist, assert_compound_exists, assert_property
 from util.gpt.prompts.word_splitting import get_gpt_word_splits
 
 
@@ -24,3 +24,19 @@ def test_hindi_sentence_splits_2():
     assert_compound_exists("जैसे ही", ["जैसे", "ही"], result_json)
     assert_compound_exists("हो रहा है", ["हो", "रहा", "है"], result_json)
     assert_compound_exists("जोर से", ["जोर", "से"], result_json)
+
+
+def test_hindi_sentence_splits_3():
+    test_prompt = "एक किसान के पास एक चतुर गधा था।"
+    result_json = get_gpt_word_splits(test_prompt, "hi")
+
+    assert_compound_exists("के पास", ["के", "पास"], result_json)
+
+
+def test_hindi_sentence_splits():
+    test_prompt = "किसान चाहे कितनी भी कोशिश कर ले, गधे को बाहर नहीं निकाल सका।"
+    result_json = get_gpt_word_splits(test_prompt, "hi")
+
+    assert_compound_exists("निकाल सका", ["निकाल", "सका"], result_json)
+    assert_compound_does_not_exist("को बाहर", result_json)
+    assert_compound_does_not_exist("गधे को बाहर", result_json)

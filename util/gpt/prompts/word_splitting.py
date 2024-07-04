@@ -15,6 +15,7 @@ Mention if a noun is in the oblique case.
 
 If a word is part of a compound verb or phrasal verb add it in the "compounds" section.
 If a word is part of a correlative add it in the "compounds" section.
+If there is a prepositional phrase or postpositional phrase with "के", add it in the "compounds" section.
 Add the "compound_id" to all words, that are part of the compound.
 
 If a word is part of a fixed phrase, proverb or idiom add it in the "idioms" section.
@@ -97,7 +98,7 @@ def get_gpt_word_splits(text: str, from_lang: str) -> str:
         if tries > 5:
             raise Exception("Could not get word splits from gpt")
         response = single_chat_completion(
-            prompt, type="json_object", max_tokens=4096, temperature=0, top_p=0.05)
+            prompt, type="json_object", max_tokens=4096, temperature=0, top_p=0)
         try:
             result_json = (json.loads(response))
         except json.decoder.JSONDecodeError:
