@@ -12,10 +12,10 @@ Give me the word wise translation (every single word).
 Give word_type for every word.
 Give the gender for nouns.
 Mention if a noun is in the oblique case.
+For all postpositions, add their function in this context and how they change the meaning of the words around them. Use simple language (4th grade reading level).
 
-If a word is part of a compound verb or phrasal verb add its smallest unit in the "compounds" section.
+If a word is part of a compound verb or phrasal verb add it in the "compounds" section.
 If a word is part of a correlative add its smallest unit in the "compounds" section.
-If there is a prepositional phrase or postpositional phrase that changes the translation of the words in English, add it in the "compounds" section.
 Add the "compound_id" to all words, that are part of the compound.
 
 If a word is part of a fixed phrase, proverb or idiom add it in the "phrases" section.
@@ -23,7 +23,7 @@ Add the "phrase_id" to all words that are part of the phrase.
 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields). Do "phrases" first, then do the "sentence" part. Do the "compounds" part last. :
-""" + '\'{ "phrases": [{"id": "id of the phrase","text": "untranslated phrase", "translation": "translation of the phrase"},...], "sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","compound_id": "id of the compound", "phrase_id":"id of the phrase"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...] }\''
+""" + '\'{ "phrases": [{"id": "id of the phrase","text": "untranslated phrase", "translation": "translation of the phrase"},...], "sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "function in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","function":"function of a postposition. Start with \'in this context it...\'","compound_id": "id of the compound", "phrase_id":"id of the phrase"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...] }\''
 
     if from_lang == "ja":
         return f"""Given this sentence:
@@ -110,6 +110,8 @@ def clean_result_json(text, result_json, from_lang):
             entry["translation"] = entry.pop("dictionary_translation")
             if entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
+            if "function" in entry:
+                entry["note"] = entry.pop("function").lower().replace("in this context it ", "")
         merge_properties_into_compounds(["phrase"], result_json)
         allow_list_property("case", ["oblique"], result_json)
     if from_lang == "ja":
@@ -122,6 +124,12 @@ def clean_result_json(text, result_json, from_lang):
             "case", ["accusative", "dative", "nominative", "genitive"], result_json)
     remove_words_not_in_sentence(text, result_json)
     remove_compounds_with_one_or_less_words_or_compounds(result_json)
+
+
+def rename_property(old_name, new_name, result_json):
+    for entry in result_json["sentence"]:
+        if old_name in entry:
+            entry[new_name] = entry.pop(old_name)
 
 
 def merge_properties_into_compounds(property_names, result_json):

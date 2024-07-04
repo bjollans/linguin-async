@@ -8,6 +8,14 @@ def assert_property(assert_obj, test_json):
                             for x in test_json["sentence"] if x["text"] == text)
         assert expected_value == actual_value
 
+def assert_property_like(assert_obj, test_json):
+    text = assert_obj.pop("text")
+    assert len([x for x in test_json["sentence"] if x["text"] == text]) > 0
+    for k, expected_value in assert_obj.items():
+        actual_value = next(x[k]
+                            for x in test_json["sentence"] if x["text"] == text)
+        assert expected_value in actual_value
+
 
 def assert_word_not_in_sentence(text, test_json):
     assert len([x for x in test_json["sentence"] if x["text"] == text]) == 0
