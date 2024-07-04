@@ -24,7 +24,6 @@ Add the "idiom_id" to all words that are part of the idiom.
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
 """ + '\'{"sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","compound_id": "id of the compound", "idiom_id":"id of the idiom"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...]}\''
-    
 
     if from_lang == "ja":
         return f"""Given this sentence:
@@ -44,31 +43,24 @@ If a word is written in kanjis, add them to the "kanjis" list with most common o
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
 """ + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, postposition, particle,ii-adjective,na-adjective","compound_id": "id of the compound", "kanjis":[{"text":"kanji written","on":"most common on readings","kun":"most common kun readings","meaning":"most common meanings"},...]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...]}\''
-    
 
     if from_lang == "de" or from_lang == "el":
         return f"""Given this sentence:
 {text}
 
-Give me the word wise translation (every single word).
+Give me the word wise translation (every single word). Do not split words.
 Give word_type for every word.
-Give the Gender for nouns.
-Give the case for nouns, articles, adjectives and verbs.
+Give the gender for nouns. If a noun is in plural, give the gender as if it was in singular.
+Give the case for nouns, articles and adjectives.
 
-If there is a compound verb add it in the "compounds" section.
-A compound must have multiple words!
-Add the "compound_id" to all words, that are part of the compound.
+If there is a separable verb construction, add it in the "separable_verbs" section.
+Add the "separable_verb_id" to all parts of the separable verb construction.
 
-If there is a common phrase or idiom, add it in the "idioms" section.
-Add the "idiom_id" to all words, that are part of the compound!! Do not leave any word out.
-An idiom must have multiple words!
+If there is a common phrase or idiom, add it in the "phrases" section.
+Add the "phrase_id" to all parts of the phrase.
 
-A word can be part of both a compound and an idiom at the same time.
-
-For the dictionary_translation, imagine the word is standing alone.
-Return in json format like so (omit empty fields):
-""" + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, adjective, noun","gender": "gender of the noun","case":"what case the word is in","compound_id": "id of the compound"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...], }\''
-    
+Return in json format like so (omit empty fields). Do "phrases" first, then do "separable_verbs". Do the "sentence" part last. (for every single word in "{text}", without splitting any words):
+""" + '\'{"phrases": [{"id": "id of the phrase","text": "untranslated phrase", "translation": "translation of the phrase"},...], {"separable_verbs": [{"id": "id of the separable verb","text": "untranslated separable verb", "translation": "translation of the separable verb"},...], "sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, adjective, noun","gender": "masculine/feminine/neuter","case":"dative/accusative/nominative/genitive","separable_verb_id": "id of the separable verb","phrase_id": "id of the phrase"},...]}\''
 
     if from_lang == "zh":
         return f"""Given this sentence:
@@ -88,6 +80,7 @@ If a word is made up of multiple characters, add them in hanzis. Do not do this 
 For the dictionary_translation, imagine the word is standing alone.
 Return in json format like so (omit empty fields):
 """ + '\'{"sentence":[ {"text": "untranslated word","translation": "translated word","word_type": "e.g. verb, noun","compound_id": "id of the compound", "hanzis":[{"text":"hanzi 1 written","meaning":"meaning of the hanzi alone"}, ...]},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...]}\''
+
 
 def get_gpt_word_splits(text: str, from_lang: str) -> str:
     prompt = get_gpt_word_splits_prompt(text, from_lang)
@@ -117,29 +110,58 @@ def clean_result_json(text, result_json, from_lang):
             entry["translation"] = entry.pop("dictionary_translation")
             if entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
+        allow_list_property("case", ["oblique"], result_json)
     if from_lang == "ja":
         remove_non_existant_kanjis(text, result_json)
-
+    if from_lang == "de":
+        # Add two zeroes to phrase ids to not have collisions with separable verb ids
+        # overwrite separable verbs with phrases
+        if "phrases" in result_json:
+            for entry in result_json["phrases"]:
+                entry["id"] += '00'
+        for entry in result_json["sentence"]:
+            if "separable_verb_id" in entry:
+                entry["compound_id"] = entry.pop("separable_verb_id")
+            if "phrase_id" in entry:
+                entry["compound_id"] = entry.pop("phrase_id") + '00'
+        if "separable_verbs" in result_json:
+            result_json["compounds"] = result_json["separable_verbs"]
+        if "phrases" in result_json:
+            if "compounds" in result_json:
+                result_json["compounds"] += result_json["phrases"]
+            else:
+                result_json["compounds"] = result_json["phrases"]
+        allow_list_property(
+            "gender", ["masculine", "feminine", "neuter"], result_json)
+        allow_list_property(
+            "case", ["accusative", "dative", "nominative", "genitive"], result_json)
     remove_words_not_in_sentence(text, result_json)
     remove_compounds_with_one_or_less_words_or_compounds(result_json)
 
 
+def allow_list_property(property_name, allow_list, result_json):
+    for entry in result_json["sentence"]:
+        if property_name in entry and entry[property_name] not in allow_list:
+            del entry[property_name]
+
+
 def remove_non_existant_kanjis(text, result_json):
     for entry in result_json["sentence"]:
-        if not "kanjis" in entry: continue
-        for i in range(len(entry["kanjis"])-1,-1,-1):
+        if not "kanjis" in entry:
+            continue
+        for i in range(len(entry["kanjis"])-1, -1, -1):
             actual_kanji = entry["kanjis"][i]["text"]
             if not actual_kanji in text:
                 del entry["kanjis"][i]
         if len(entry["kanjis"]) == 0:
             del entry["kanjis"]
-            
 
 
 def remove_words_not_in_sentence(text, result_json):
-    for i in range(len(result_json["sentence"])-1,-1,-1):
+    for i in range(len(result_json["sentence"])-1, -1, -1):
         if result_json["sentence"][i]["text"] not in text:
             del result_json["sentence"][i]
+
 
 def remove_compounds_with_one_or_less_words_or_compounds(result_json):
     compound_id_count = defaultdict(lambda: 0)
@@ -158,10 +180,10 @@ def remove_compounds_with_one_or_less_words_or_compounds(result_json):
     for term in terms:
         if "idiom_id" in term and idiom_id_count[term["idiom_id"]] <= 1:
             del term["idiom_id"]
-    for i in range(len(compounds)-1,-1,-1):
+    for i in range(len(compounds)-1, -1, -1):
         if compound_id_count[compounds[i]["id"]] <= 1:
             compounds.remove(compounds[i])
-    for i in range(len(idioms)-1,-1,-1):
+    for i in range(len(idioms)-1, -1, -1):
         if idiom_id_count[idioms[i]["id"]] <= 1:
             idioms.remove(idioms[i])
 
@@ -170,7 +192,8 @@ def remove_compounds_that_are_same_as_one_word(result_json):
     if "compounds" not in result_json:
         return
     term_strs = [x["text"] for x in result_json["sentence"]]
-    result_json["compounds"] = [x for x in result_json["compounds"] if x["text"] not in term_strs]
+    result_json["compounds"] = [
+        x for x in result_json["compounds"] if x["text"] not in term_strs]
     if len(result_json["compounds"]) == 0:
         del result_json["compounds"]
     remove_compounds_with_one_or_less_words_or_compounds(result_json)
