@@ -13,17 +13,12 @@ Give word_type for every word.
 Give the gender for nouns.
 Mention if a noun is in the oblique case.
 
-If a word is part of a compound verb or phrasal verb add it in the "compounds" section.
-If a word is part of a correlative add it in the "compounds" section.
-If there is a prepositional phrase or postpositional phrase with "के", add it in the "compounds" section.
-Add the "compound_id" to all words, that are part of the compound.
-
-If a word is part of a fixed phrase, proverb or idiom add it in the "idioms" section.
-Add the "idiom_id" to all words that are part of the idiom.
+Add all auxiliary verb constructions to the "auxiliary verb constructions" section.
+Add all correlatives, to the "correlatives" section.
 
 For the dictionary_translation, imagine the word is standing alone.
-Return in json format like so (omit empty fields):
-""" + '\'{"sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","compound_id": "id of the compound", "idiom_id":"id of the idiom"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...], "idioms": [{"id": "id of the idiom","text": "untranslated idiom", "translation": "translation of the idiom"},...]}\''
+Return in json format like so (omit empty fields). Start with "auxiliary_verbs", then do "correlatives". Do the "sentence" part last. :
+""" + '\'{ "auxiliary_verb_constructions": [{"id": "id of the auxiliary verb construction","text": "untranslated auxiliary verb construction", "translation": "translation of the auxiliary verb construction"},...] ,"correlatives": [{"id": "id of the correlative","text": "untranslated correlative", "translation": "translation of the correlative"},...], "sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","auxiliary_verb_construction_id": "id of the auxiliary verb construction", "phrase_id":"id of the phrase", "correlative_id":"id of the correlative"},...]}\''
 
     if from_lang == "ja":
         return f"""Given this sentence:
@@ -110,33 +105,40 @@ def clean_result_json(text, result_json, from_lang):
             entry["translation"] = entry.pop("dictionary_translation")
             if entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
+        merge_properties_into_compounds(
+            ["auxiliary_verb_construction", "correlative"], result_json)
         allow_list_property("case", ["oblique"], result_json)
+        allow_list_property("gender", ["masculine", "feminine"], result_json)
     if from_lang == "ja":
         remove_non_existant_kanjis(text, result_json)
     if from_lang == "de":
-        # Add two zeroes to phrase ids to not have collisions with separable verb ids
-        # overwrite separable verbs with phrases
-        if "phrases" in result_json:
-            for entry in result_json["phrases"]:
-                entry["id"] += '00'
-        for entry in result_json["sentence"]:
-            if "separable_verb_id" in entry:
-                entry["compound_id"] = entry.pop("separable_verb_id")
-            if "phrase_id" in entry:
-                entry["compound_id"] = entry.pop("phrase_id") + '00'
-        if "separable_verbs" in result_json:
-            result_json["compounds"] = result_json["separable_verbs"]
-        if "phrases" in result_json:
-            if "compounds" in result_json:
-                result_json["compounds"] += result_json["phrases"]
-            else:
-                result_json["compounds"] = result_json["phrases"]
+        merge_properties_into_compounds(
+            ["phrase", "separable_verb"], result_json)
         allow_list_property(
             "gender", ["masculine", "feminine", "neuter"], result_json)
         allow_list_property(
             "case", ["accusative", "dative", "nominative", "genitive"], result_json)
     remove_words_not_in_sentence(text, result_json)
     remove_compounds_with_one_or_less_words_or_compounds(result_json)
+
+
+def merge_properties_into_compounds(property_names, result_json):
+    # first properties take priority
+    property_names.reverse()
+    for index, property_name in enumerate(property_names):
+        anti_collision_id_addition = (index * '00')
+        for entry in result_json["sentence"]:
+            if f"{property_name}_id" in entry:
+                entry["compound_id"] = entry.pop(
+                    f"{property_name}_id") + anti_collision_id_addition
+        property_name_plural = f"{property_name}s"
+        if property_name_plural in result_json:
+            for entry in result_json[property_name_plural]:
+                entry["id"] += anti_collision_id_addition
+            if "compounds" in result_json:
+                result_json["compounds"] += result_json[property_name_plural]
+            else:
+                result_json["compounds"] = result_json[property_name_plural]
 
 
 def allow_list_property(property_name, allow_list, result_json):
