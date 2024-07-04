@@ -50,3 +50,12 @@ def test_hindi_sentence_splits_5():
     result_json = get_gpt_word_splits(test_prompt, "hi")
 
     assert_compound_does_not_exist("की आज्ञाओं", result_json)
+
+
+def test_hindi_sentence_splits_6():
+    test_prompt = "किसान चाहे कितनी भी कोशिश कर ले, गधे को बाहर नहीं निकाल सका।"
+    result_json = get_gpt_word_splits(test_prompt, "hi")
+
+    assert_compound_exists("कर ले", ["कर", "ले"], result_json)
+    assert_compound_exists("चाहे कितनी भी", ["चाहे", "कितनी", "भी"], result_json)
+    

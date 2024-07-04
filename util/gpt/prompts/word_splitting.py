@@ -18,7 +18,7 @@ If a word is part of a compound verb or phrasal verb add it in the "compounds" s
 If a word is part of a correlative add its smallest unit in the "compounds" section.
 Add the "compound_id" to all words, that are part of the compound.
 
-If a word is part of a fixed phrase, proverb or idiom add it in the "phrases" section.
+If a word is part of a proverb or idiom add it in the "phrases" section.
 Add the "phrase_id" to all words that are part of the phrase.
 
 For the dictionary_translation, imagine the word is standing alone.

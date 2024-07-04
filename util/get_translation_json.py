@@ -48,6 +48,7 @@ class Term:
     idiom_id: str = None
     kanjis: list[Kanji] = None
     hanzis: list[Hanzi] = None
+    note: str = None
 
     def to_dict(self):
         return asdict(self, dict_factory=lambda x: {k: v for (k, v) in x if v != None})
@@ -152,6 +153,7 @@ def _process_word_splits_and_translation_from_gpt(response_json):
                            idiom_id=word["idiom_id"] if "idiom_id" in word else None,
                            kanjis=word["kanjis"] if "kanjis" in word else None,
                            hanzis=word["hanzis"] if "hanzis" in word else None,
+                           note=word["note"] if "note" in word else None,
                            ) for word in response_json["sentence"]]
     sentence_compounds = []
     if "compounds" in response_json and len(response_json["compounds"]) > 0:
