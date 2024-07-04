@@ -208,7 +208,7 @@ def _calculate_sentence_by_sentence_translation_json(sentences: list[Term], from
     # STEP 1: parallel: tuples = pool.map(_get_word_splits_and_translation_from_gpt(sentence, from_lang))
     # STEP 2 synch, process tuples
 
-    with ThreadPoolExecutor(max_workers=len(sentences)) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         #for index, sentence in enumerate(sentences):
         future_to_translation_json = {executor.submit(_calculate_sentence_translation_json, sentence, from_lang, index): 
                                       (sentence, from_lang, index) for index, sentence in enumerate(sentences)}

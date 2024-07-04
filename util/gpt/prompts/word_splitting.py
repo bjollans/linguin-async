@@ -97,11 +97,11 @@ def get_gpt_word_splits(text: str, from_lang: str) -> str:
         if tries > 5:
             raise Exception("Could not get word splits from gpt")
         response = single_chat_completion(
-            prompt, type="json_object", max_tokens=2048, temperature=0, top_p=0.05)
+            prompt, type="json_object", max_tokens=4096, temperature=0, top_p=0.05)
         try:
             result_json = (json.loads(response))
         except json.decoder.JSONDecodeError:
-            print("Could not parse json. Trying again.")
+            print(f"Could not parse json {response}. Trying again.")
             continue
         except Exception as e:
             print(f"Error getting word splits from gpt: {e}")
