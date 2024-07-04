@@ -13,12 +13,17 @@ Give word_type for every word.
 Give the gender for nouns.
 Mention if a noun is in the oblique case.
 
-Add all auxiliary verb constructions to the "auxiliary verb constructions" section.
-Add all correlatives, to the "correlatives" section.
+If a word is part of a compound verb or phrasal verb add its smallest unit in the "compounds" section.
+If a word is part of a correlative add its smallest unit in the "compounds" section.
+If there is a prepositional phrase or postpositional phrase that changes the translation of the words in English, add it in the "compounds" section.
+Add the "compound_id" to all words, that are part of the compound.
+
+If a word is part of a fixed phrase, proverb or idiom add it in the "phrases" section.
+Add the "phrase_id" to all words that are part of the phrase.
 
 For the dictionary_translation, imagine the word is standing alone.
-Return in json format like so (omit empty fields). Start with "auxiliary_verbs", then do "correlatives". Do the "sentence" part last. :
-""" + '\'{ "auxiliary_verb_constructions": [{"id": "id of the auxiliary verb construction","text": "untranslated auxiliary verb construction", "translation": "translation of the auxiliary verb construction"},...] ,"correlatives": [{"id": "id of the correlative","text": "untranslated correlative", "translation": "translation of the correlative"},...], "sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","auxiliary_verb_construction_id": "id of the auxiliary verb construction", "phrase_id":"id of the phrase", "correlative_id":"id of the correlative"},...]}\''
+Return in json format like so (omit empty fields). Do "phrases" first, then do the "sentence" part. Do the "compounds" part last. :
+""" + '\'{ "phrases": [{"id": "id of the phrase","text": "untranslated phrase", "translation": "translation of the phrase"},...], "sentence":[ {"text": "untranslated word","dictionary_translation": "usual dictionary translation","context_translation": "translation in this sentence","word_type": "e.g. verb, postposition, particle","case":"\'oblique\' if it is a noun in oblique case, else empty", "gender": "gender of the noun","compound_id": "id of the compound", "phrase_id":"id of the phrase"},...], "compounds": [{"id": "id of the compound","text": "untranslated compound", "translation": "translation of the compound"},...] }\''
 
     if from_lang == "ja":
         return f"""Given this sentence:
@@ -105,15 +110,12 @@ def clean_result_json(text, result_json, from_lang):
             entry["translation"] = entry.pop("dictionary_translation")
             if entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
-        merge_properties_into_compounds(
-            ["auxiliary_verb_construction", "correlative"], result_json)
+        merge_properties_into_compounds(["phrase"], result_json)
         allow_list_property("case", ["oblique"], result_json)
-        allow_list_property("gender", ["masculine", "feminine"], result_json)
     if from_lang == "ja":
         remove_non_existant_kanjis(text, result_json)
     if from_lang == "de":
-        merge_properties_into_compounds(
-            ["phrase", "separable_verb"], result_json)
+        merge_properties_into_compounds(["phrase","separable_verb"], result_json)
         allow_list_property(
             "gender", ["masculine", "feminine", "neuter"], result_json)
         allow_list_property(
@@ -129,8 +131,7 @@ def merge_properties_into_compounds(property_names, result_json):
         anti_collision_id_addition = (index * '00')
         for entry in result_json["sentence"]:
             if f"{property_name}_id" in entry:
-                entry["compound_id"] = entry.pop(
-                    f"{property_name}_id") + anti_collision_id_addition
+                entry["compound_id"] = entry.pop(f"{property_name}_id") + anti_collision_id_addition
         property_name_plural = f"{property_name}s"
         if property_name_plural in result_json:
             for entry in result_json[property_name_plural]:
