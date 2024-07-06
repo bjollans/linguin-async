@@ -31,7 +31,9 @@ Return in json format like so (omit empty fields). Do "phrases" first, then do t
 
 Give me the word wise translation (every single word). Translate every word only once.
 Give word_type for every word. For adjectives include if they are ii- or na-adjectives
-Do not split auxiliary adjectives off of the words they are attached to, or off of each other. Split auxiliary verbs off.
+Do not split auxiliary adjectives off of the words they are attached to, or off of each other. Split auxiliary verbs off. 
+Do not split the continuative form (verb + て)!!
+Do not split the continuative form (verb + て)!!
 
 If two or more words make up a compound verb add it in the "compounds" section.
 If a word has one or more auxiliary adjective attached, add this in the "compounds" section.

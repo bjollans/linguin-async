@@ -38,6 +38,15 @@ def test_japanese_sentence_splits_4():
     assert_kanji("遊び","遊","ユ","あそ","play", result_json)
 
 
+def test_japanese_sentence_splits_5():
+    # Test because 飛び跳ねて was split into 飛び跳ね and て
+    test_prompt = "遊び好きな子猫が飛び跳ねて糸を捕まえようとする。"
+    result_json = get_gpt_word_splits(test_prompt, "ja")
+    assert_property({"text": "飛び跳ねて"}, result_json)
+    assert_word_not_in_sentence("て", result_json)
+    assert_compound_does_not_exist("飛び跳ねて", result_json)
+
+
 
 def assert_kanji(text, kanji_text, on, kun, meaning, test_json):
     kanji_list = next(x["kanjis"] for x in test_json["sentence"] if x["text"] == text)
