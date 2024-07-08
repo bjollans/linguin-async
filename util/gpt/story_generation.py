@@ -65,11 +65,18 @@ def generate_mini_story_with_image_jul_2024(language, word_count=300):
     img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{
         random.randint(0, 80)}.jpeg'
     prompts=[f"In this image there is a drawing. Describe the drawing (pretend it is set in {language_to_area[language]}), ignore the rest of the image. Be detailed.",
-        f"Generate a bedtime story based on the image. Do not mention {language_to_area[language]}. Make it around {word_count} words long. The reading level should be of a second grader. The story should contain conflict. Nobody should cheer in the end. Return it in JSON format like so:"+' {"title":"...","story":"..."}',
-        'Do not start the story with "Once upon a time"',
-        'Update the formatting of the story. Every sentence should be in a new line. Keep the separation of paragraphs']
+        f"Generate a bedtime story based on the image. Do not mention {language_to_area[language]}. Make it around {word_count} words long. The reading level should be of a second grader. The story should contain conflict. Nobody should cheer in the end. Return it in JSON format like so:"+' {"title":"...","story":"..."}']
     return chain_of_thought_with_image_final_result_json(prompts, img_url, model='gpt-4o', system_prompt=authors_system_prompt(language))
 
+
+def clean_story(content):
+    print("cleaning story")
+    prompts=[]
+    if "Once upon a time" in content:
+        prompts=[f'Make minor changes to this story:\n{content}\n\nDo not start the story with "Once upon a time". Return the story in the same JSON format.','Update the formatting of the story. Every sentence should be in a new line. The lines should be grouped into paragraphs']
+    else:
+        prompts=[f'Make minor changes to this story:\n{content}\n\nUpdate the formatting of the story. Every sentence should be in a new line. The lines should be grouped into paragraphs. Return the story in the same JSON format.']
+    return chain_of_thought(prompts, type="json_object")
 
 
 def check_is_story_good(content):
@@ -108,11 +115,10 @@ def check_is_story_good(content):
 
 def is_story_good(content):
     amount_to_aggregate=3
-    results = []
-    with ThreadPoolExecutor(max_workers=amount_to_aggregate) as executor:
-        futures = [executor.submit(check_is_story_good, content) for i in range(amount_to_aggregate)]
-        check_results = [future.result() for future in as_completed(futures)]
-    return all(check_results)
+    for i in range(amount_to_aggregate):
+        if not check_is_story_good(content):
+            return False
+    return True
 
 
 def generate_mini_story_no_image_jul_2024(language, word_count=200):

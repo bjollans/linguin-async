@@ -4,7 +4,7 @@ from util.dalle3 import get_img_url_fiction, get_img_url_non_fiction
 from util.db import get_stories_by_language, get_stories_in_review, get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status, update_story
 from util.file_utils import download_image_from_url
 from util.gpt.gpt import single_chat_completion
-from util.gpt.story_generation import evaluate_mini_story, evaluation_min_value, generate_ideas_for_articles, generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_mini_story_no_image_jul_2024, generate_mini_story_with_image_jul_2024, generate_non_fiction_story, generate_story_summary, is_story_good
+from util.gpt.story_generation import clean_story, generate_ideas_for_articles, generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_mini_story_no_image_jul_2024, generate_mini_story_with_image_jul_2024, generate_non_fiction_story, generate_story_summary, is_story_good
 import json
 
 from util.validation.sentence_size import sentences_are_too_long
@@ -28,12 +28,16 @@ def generate_one_round_of_content(language, round_size=5):
 
 def generate_and_save_mini_story(language, word_count=200):
     try:
-        story = json.loads(generate_mini_story_with_image_jul_2024(
-            language, word_count=word_count))
-        if is_story_good(story["story"]):
-            print("Generated mini story is good. Inserting.")
+        story_json_str = generate_mini_story_with_image_jul_2024(
+            language, word_count=word_count)
+        story_json = json.loads(story_json_str)
+        if is_story_good(story_json["story"]):
+            print("Generated mini story is good.")
+            story_json_str = clean_story(story_json_str)
+            story_json = json.loads(story_json_str)
+            print("Insertng good story.")
             insert_story_content(
-                story["title"], story["story"], "Easy", targetLanguage=language, tags="mini story")
+                story_json["title"], story_json["story"], "Easy", targetLanguage=language, tags="mini story")
         else:
             print("Generated mini story is not good enough. Moving on.")
     except Exception as e:
