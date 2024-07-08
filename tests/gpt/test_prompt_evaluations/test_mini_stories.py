@@ -1,5 +1,5 @@
 import pytest
-from util.gpt.story_generation import evaluate_mini_story, evaluation_min_value, is_story_good
+from util.gpt.story_generation import is_story_good
 
 @pytest.mark.parametrize("story", [
 """Once upon a time, in a quiet pond, lived a brave little frog named Freddy. Freddy loved to explore new places. One day, he saw the tallest cliff he had ever seen.'I’m going to climb that cliff!' he told his friends, Lilly, Tommy, and Sammy.
@@ -34,8 +34,10 @@ But she knew she had to be more careful with her special things."""
 ])
 def test_good_story(story):
     # Test for a high bar
-    assert any([is_story_good(story) for _ in range(5)])
-
+    for _ in range(3):
+        if is_story_good(story):
+            return
+    assert False
 
 
 

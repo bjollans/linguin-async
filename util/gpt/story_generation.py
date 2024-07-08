@@ -71,49 +71,48 @@ def generate_mini_story_with_image_jul_2024(language, word_count=300):
     return chain_of_thought_with_image_final_result_json(prompts, img_url, model='gpt-4o', system_prompt=authors_system_prompt(language))
 
 
-def evaluation_min_value():
-    return 7.7
+
+def check_is_story_good(content):
+    for tries in range(3):
+        try:
+            prompt = f"""Rate the following story:
+        {content}
+
+        Rate it on these criteria:
+        1. Coherence and Consistency: Assess whether the story maintains a consistent narrative, with events and character actions that logically flow from one to the next.
+        2. Grammar and Style: Evaluate the grammatical correctness and stylistic elegance of the text.
+        3. Creativity and Originality: Measure how novel the combinations of plot, characters, and settings are within the stories.
+        4. Emotional Engagement: Determine the emotional impact of the story and how well it will engage readers.
+        5. Character Development: How well are characters evolve throughout the story? This can be quantified by changes in the language associated with characters or shifts in their actions and the consequences of those actions.
+        6. Plot Complexity: Analyze the complexity of the plot by evaluating the number of plot twists, the introduction of new characters or conflicts, and how these are resolved by the end of the story.
+        7. Readability and Accessibility: Use readability scores (like the Flesch-Kincaid grade level) to ensure the text is accessible to a 5th grade audience.
+        8. Completion and Satisfaction: Check whether all introduced plot lines and questions are resolved by the end, which can contribute to reader satisfaction. This might involve tracking introduced elements and checking their status at the story’s conclusion.
 
 
-def evaluate_mini_story(content):
-    prompt = f"""Rate the following story:
-{content}
-
-Rate it on these criteria:
-1. Coherence and Consistency: Assess whether the story maintains a consistent narrative, with events and character actions that logically flow from one to the next.
-2. Grammar and Style: Evaluate the grammatical correctness and stylistic elegance of the text.
-3. Creativity and Originality: Measure how novel the combinations of plot, characters, and settings are within the stories.
-4. Emotional Engagement: Determine the emotional impact of the story and how well it will engage readers.
-5. Character Development: How well are characters evolve throughout the story? This can be quantified by changes in the language associated with characters or shifts in their actions and the consequences of those actions.
-6. Plot Complexity: Analyze the complexity of the plot by evaluating the number of plot twists, the introduction of new characters or conflicts, and how these are resolved by the end of the story.
-7. Readability and Accessibility: Use readability scores (like the Flesch-Kincaid grade level) to ensure the text is accessible to a 5th grade audience.
-8. Completion and Satisfaction: Check whether all introduced plot lines and questions are resolved by the end, which can contribute to reader satisfaction. This might involve tracking introduced elements and checking their status at the story’s conclusion.
-
-
-First give me a plain text evaluation of all criteria, and then a numerical representation from 1 to 10. Give it in JSON format like so:
-""" + '{"criteria_name (e.g. Grammar and Style)":{"plain_text_evaluation":"2-3 sentences...", "numerical_rating":"1-10"},...}'
-    evaluation_json_text = single_chat_completion(prompt, system_prompt=authors_system_prompt(), type="json_object")
-    evaluation_json = json.loads(evaluation_json_text)
-    #Completion and Satisfaction is the most important
-    final_evaluation = (2.5 * int(evaluation_json["Coherence and Consistency"]["numerical_rating"]) +\
-                        0.7 * int(evaluation_json["Grammar and Style"]["numerical_rating"]) +\
-                        0.5 * int(evaluation_json["Creativity and Originality"]["numerical_rating"]) +\
-                        1.5 * int(evaluation_json["Emotional Engagement"]["numerical_rating"]) +\
-                        0.7 * int(evaluation_json["Character Development"]["numerical_rating"]) +\
-                        0.2 * int(evaluation_json["Plot Complexity"]["numerical_rating"]) +\
-                        0.9 * int(evaluation_json["Readability and Accessibility"]["numerical_rating"]) +\
-                        4.0 * int(evaluation_json["Completion and Satisfaction"]["numerical_rating"])) / 11
-    return final_evaluation
+        First give me a plain text evaluation of all criteria, and then a numerical representation from 1 to 10. Give it in JSON format like so:
+        """ + '{"criteria_name (e.g. Grammar and Style)":{"plain_text_evaluation":"2-3 sentences...", "numerical_rating":"1-10"},...}'
+            evaluation_json_text = single_chat_completion(prompt, system_prompt=authors_system_prompt(), type="json_object")
+            evaluation_json = json.loads(evaluation_json_text)
+            #Completion and Satisfaction is the most important
+            is_coherent = int(evaluation_json["Coherence and Consistency"]["numerical_rating"]) >= 8
+            is_readable = int(evaluation_json["Readability and Accessibility"]["numerical_rating"]) >= 8
+            ties_things_up = int(evaluation_json["Completion and Satisfaction"]["numerical_rating"]) >= 8
+            is_engaging = int(evaluation_json["Emotional Engagement"]["numerical_rating"]) >= 7
+            return is_coherent and is_readable and ties_things_up and is_engaging
+        except Exception as e:
+            print(f"Error evaluating mini story. Trying again. {e}")
+            continue
+    print("Error evaluating mini story. Giving up.")
+    return False
 
 
 def is_story_good(content):
     amount_to_aggregate=3
     results = []
     with ThreadPoolExecutor(max_workers=amount_to_aggregate) as executor:
-        futures = [executor.submit(evaluate_mini_story, content) for i in range(amount_to_aggregate)]
-        results = [future.result() for future in as_completed(futures)]
-    print(f"sum(results) / len(results): {sum(results) / len(results)} , {",".join([str(r) for r in results])}")
-    return min(results) > evaluation_min_value()
+        futures = [executor.submit(check_is_story_good, content) for i in range(amount_to_aggregate)]
+        check_results = [future.result() for future in as_completed(futures)]
+    return all(check_results)
 
 
 def generate_mini_story_no_image_jul_2024(language, word_count=200):
