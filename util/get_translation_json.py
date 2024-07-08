@@ -198,7 +198,8 @@ def _calculate_sentence_translation_json(sentence: Term, from_lang, index):
         
         return sentence_translation_json, legacy_terms_one_sentence, legacy_compounds_one_sentence, legacy_idioms_one_sentence
     except Exception as e:
-        print(f"Error getting word splits for sentence {index+1}. Moving on. Error: {e}")
+        print(f"Error getting word splits for sentence {index+1}. Crashing the run! Else it will crash later by itself Error: {e}")
+        raise e
         return None, None, None, None
 
 

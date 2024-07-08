@@ -192,6 +192,7 @@ def get_all_stories():
         .execute()
     return response.data
 
+
 def get_all_visible_story_translations():
     response = supabase \
         .table('storyTranslations') \
@@ -338,14 +339,15 @@ def list_pending_conversation_ids():
     return response.data
 
 
-def insert_story_content(title, content, difficulty, targetLanguage="hi"):
+def insert_story_content(title, content, difficulty, targetLanguage="hi", tags=""):
     response = supabase \
         .table('stories') \
         .insert({"title": title,
                  "en": content,
                  "difficulty": difficulty,
                  "targetLanguage": targetLanguage,
-                 "status": "Content Review Pending"}) \
+                 "status": "Content Review Pending",
+                 "tags": tags}) \
         .execute()
     return response.data
 
@@ -382,6 +384,16 @@ def get_story_titles_for_language(language):
         .table('stories') \
         .select("title") \
         .eq("targetLanguage", language) \
+        .execute()
+    return response.data
+
+
+def get_article_titles_for_language(language, tag):
+    response = supabase \
+        .table('stories') \
+        .select("title") \
+        .eq("targetLanguage", language) \
+        .like("title", f'%{tag}%') \
         .execute()
     return response.data
 

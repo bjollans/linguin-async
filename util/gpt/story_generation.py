@@ -1,7 +1,9 @@
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
 import random
-from util.db import get_story_titles_for_language, get_texts_stories_in_collection
-from util.gpt.gpt import chain_of_thought, chain_of_thought_with_image, react_to_image, single_chat_completion
+from util.db import get_article_titles_for_language, get_story_titles_for_language, get_texts_stories_in_collection
+from util.gpt.gpt import chain_of_thought, chain_of_thought_with_image, chain_of_thought_with_image_final_result_json, react_to_image, single_chat_completion
 
 language_to_country = {
     "hi": "India",
@@ -12,6 +14,17 @@ language_to_country = {
     "vi": "Vietnam",
     "ko": "Korea",
     "th": "Thailand",
+}
+
+language_to_area = {
+    "hi": "India",
+    "ja": "East Asia",
+    "el": "Europe",
+    "de": "Europe",
+    "zh": "East Asia",
+    "vi": "South East Asia",
+    "ko": "East Asia",
+    "th": "South East Asia",
 }
 
 language_to_country_adjective = {
@@ -25,15 +38,95 @@ language_to_country_adjective = {
     "th": "thai",
 }
 
+language_to_area_adjective = {
+    "hi": "indian",
+    "ja": "east asian",
+    "el": "european",
+    "de": "european",
+    "zh": "east asian",
+    "vi": "south east asian",
+    "ko": "east asian",
+    "th": "south east asian",
+}
+
 
 def generate_mini_story(language, word_count=200):
-    img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{random.randint(0,80)}.jpeg'
-    prompts = [f'In this image there is a drawing. Describe the drawing (pretend it is set in {language_to_country[language]}),'+' ignore the rest of the image. Be detailed.','Write me a short story (and title) based on this image in json format as `{"title":"...","story":"..."}`. Just return the plain JSON without formatting or backticks. The story should be at a second grader reading level. '+f'It should be {word_count} words long. It should be set in {language_to_country[language]}, but do not mention "{language_to_country[language]}" or elude to it in the story. Write the story using the Heros Journey structure. Start with the hero in a normal setting, introduce a challenge that leads them on an adventure. Have them face obstacles, receive help from a mentor, and overcome a major crisis. Conclude with the hero returning transformed, bringing back something valuable to their original home. Do not use words like "Hero" or "Quest". The setting should be general day to day and not epic. No new lines (or other control characters) outside of the story text. Be specific instead of general.']
-    return chain_of_thought_with_image(prompts, img_url, model='gpt-4-turbo-preview')
+    img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{
+        random.randint(0, 80)}.jpeg'
+    prompts = [f'In this image there is a drawing. Describe the drawing (pretend it is set in {language_to_country[language]}),'+' ignore the rest of the image. Be detailed.', 'Write me a short story (and title) based on this image in json format as `{"title":"...","story":"..."}`. Just return the plain JSON without formatting or backticks. The story should be at a second grader reading level. '+f'It should be {word_count} words long. It should be set in {language_to_country[language]}, but do not mention "{language_to_country[language]}" or elude to it in the story. Write the story using the Heros Journey structure. Start with the hero in a normal setting, introduce a challenge that leads them on an adventure. Have them face obstacles, receive help from a mentor, and overcome a major crisis. Conclude with the hero returning transformed, bringing back something valuable to their original home. Do not use words like "Hero" or "Quest". The setting should be general day to day and not epic. No new lines (or other control characters) outside of the story text. Be specific instead of general.']
+    return chain_of_thought_with_image(prompts, img_url, model='gpt-4o')
+
+
+def authors_system_prompt(language = None):
+    return f"You are a {f"{language_to_area_adjective[language]} " if language else ""}descendent of J.M. Barrie, Beatrix Potter, Kenneth Grahame, E.B. White, A.A. Milne, Eric Carle and Maurice Sendak, who inherited their story writing abilities."
+
+
+def generate_mini_story_with_image_jul_2024(language, word_count=300):
+    img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{
+        random.randint(0, 80)}.jpeg'
+    prompts=[f"In this image there is a drawing. Describe the drawing (pretend it is set in {language_to_area[language]}), ignore the rest of the image. Be detailed.",
+        f"Generate a bedtime story based on the image. Do not mention {language_to_area[language]}. Make it around {word_count} words long. The reading level should be of a second grader. The story should contain conflict. Nobody should cheer in the end. Return it in JSON format like so:"+' {"title":"...","story":"..."}',
+        'Do not start the story with "Once upon a time"',
+        'Update the formatting of the story. Every sentence should be in a new line. Keep the separation of paragraphs']
+    return chain_of_thought_with_image_final_result_json(prompts, img_url, model='gpt-4o', system_prompt=authors_system_prompt(language))
+
+
+def evaluation_min_value():
+    return 7.7
+
+
+def evaluate_mini_story(content):
+    prompt = f"""Rate the following story:
+{content}
+
+Rate it on these criteria:
+1. Coherence and Consistency: Assess whether the story maintains a consistent narrative, with events and character actions that logically flow from one to the next.
+2. Grammar and Style: Evaluate the grammatical correctness and stylistic elegance of the text.
+3. Creativity and Originality: Measure how novel the combinations of plot, characters, and settings are within the stories.
+4. Emotional Engagement: Determine the emotional impact of the story and how well it will engage readers.
+5. Character Development: How well are characters evolve throughout the story? This can be quantified by changes in the language associated with characters or shifts in their actions and the consequences of those actions.
+6. Plot Complexity: Analyze the complexity of the plot by evaluating the number of plot twists, the introduction of new characters or conflicts, and how these are resolved by the end of the story.
+7. Readability and Accessibility: Use readability scores (like the Flesch-Kincaid grade level) to ensure the text is accessible to a 5th grade audience.
+8. Completion and Satisfaction: Check whether all introduced plot lines and questions are resolved by the end, which can contribute to reader satisfaction. This might involve tracking introduced elements and checking their status at the story’s conclusion.
+
+
+First give me a plain text evaluation of all criteria, and then a numerical representation from 1 to 10. Give it in JSON format like so:
+""" + '{"criteria_name (e.g. Grammar and Style)":{"plain_text_evaluation":"2-3 sentences...", "numerical_rating":"1-10"},...}'
+    evaluation_json_text = single_chat_completion(prompt, system_prompt=authors_system_prompt(), type="json_object")
+    evaluation_json = json.loads(evaluation_json_text)
+    #Completion and Satisfaction is the most important
+    final_evaluation = (2.5 * int(evaluation_json["Coherence and Consistency"]["numerical_rating"]) +\
+                        0.7 * int(evaluation_json["Grammar and Style"]["numerical_rating"]) +\
+                        0.5 * int(evaluation_json["Creativity and Originality"]["numerical_rating"]) +\
+                        1.5 * int(evaluation_json["Emotional Engagement"]["numerical_rating"]) +\
+                        0.7 * int(evaluation_json["Character Development"]["numerical_rating"]) +\
+                        0.2 * int(evaluation_json["Plot Complexity"]["numerical_rating"]) +\
+                        0.9 * int(evaluation_json["Readability and Accessibility"]["numerical_rating"]) +\
+                        4.0 * int(evaluation_json["Completion and Satisfaction"]["numerical_rating"])) / 11
+    return final_evaluation
+
+
+def is_story_good(content):
+    amount_to_aggregate=3
+    results = []
+    with ThreadPoolExecutor(max_workers=amount_to_aggregate) as executor:
+        futures = [executor.submit(evaluate_mini_story, content) for i in range(amount_to_aggregate)]
+        results = [future.result() for future in as_completed(futures)]
+    print(f"sum(results) / len(results): {sum(results) / len(results)} , {",".join([str(r) for r in results])}")
+    return min(results) > evaluation_min_value()
+
+
+def generate_mini_story_no_image_jul_2024(language, word_count=200):
+    prompts = [
+        f'Generate a bedtime story set in {language_to_area[language]}. Do not mention {language_to_area[language]}. Make it around {word_count} words long. The reading level should be of a second grader. The story should contain conflict and a twist. Nobody should cheer in the end. Make it a happy ending with a moral.'+' Return it in JSON format like so: {"title":"...","story":"..."}',
+        'Do not start the story with "Once upon a time"',
+        'Update the formatting of the story. Every sentence should be in a new line. Keep the separation of paragraphs']
+    return chain_of_thought(prompts, type='json_object')
 
 
 def generate_mini_story_by_committee(language, word_count=300):
-    img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{random.randint(0,80)}.jpeg'
+    img_url = f'https://mini-story-images.s3.eu-west-1.amazonaws.com/{
+        random.randint(0, 80)}.jpeg'
     prompts = [f'''
 Hey, we are going to play a game. You are going to act as an AI capable of generating short stories made for language learners. You are made up of experts. The experts can talk about anything since they are here to create a unique story. Before generating a story, the experts start a conversation with each other by exchanging thoughts.
 
@@ -86,25 +179,41 @@ def generate_ideas_for_collections(collectionNames, limit=10, language="hi", wor
     random.shuffle(stories_json)
     stories_json = stories_json[:limit]
     story_titles = get_story_titles_for_language(language)
-    prompt = f'Give me another row for this json, but write it at a fourth grader reading level and make it around {word_count} words. The reader is smart, so you do not need to explain basic facts. The new topic should be informative, factual (non-fiction) and related to {language_to_country[language]}. Never adress the reader directly. These are the texts I already have {str(story_titles)}. Make it something different. Just give me the new row as plain json (with double quotes like ") without formatting: {stories_json}'
+    prompt = f'Give me another row for this json, but write it at a fourth grader reading level and make it around {word_count} words. The reader is smart, so you do not need to explain basic facts. The new topic should be informative, factual (non-fiction) and related to {
+        language_to_country[language]}. Never adress the reader directly. These are the texts I already have {str(story_titles)}. Make it something different. Just give me the new row as plain json (with double quotes like ") without formatting: {stories_json}'
     return single_chat_completion(prompt)
 
 
 def generate_non_fiction_story(topic, word_count=300):
-    return chain_of_thought([
-        f"What do you know about {topic}. Give me {word_count} words:",
-        "Simplify the language to be at a second grader reading level.",
-        "Put every sentence in a new line.",
-    ])
+    # return chain_of_thought([
+    #     f"What do you know about {topic}. Give me {word_count} words:",
+    #     "Simplify the language to be at a second grader reading level.",
+    #     "Put every sentence in a new line.",
+    # ])
+    return json.loads(chain_of_thought([
+        f'Write a article about {topic}. The article is meant of a fifth grade school book. Do not start with "Once upon a time". Make it about {word_count} words long.'+'Return it in JSON format like so: {"title":"...","article":"..."}',
+        'Update the formatting of the article. Every sentence should be in a new line. Keep the separation of paragraphs'
+    ], type="json_object"))
+
+
+def generate_ideas_for_articles(language, tag):
+    article_titles = get_article_titles_for_language(language, tag)
+    prompt = f'I have a list of topics for {tag} texts for a fifth grade school book about {language_to_country[language]}. Give me 10 more. This is my current list {article_titles}. Give me the result in json format like this'+'`{ideas:["idea1",...]}`'
+    return json.loads(single_chat_completion(prompt, type="json_object"))
+
 
 
 def generate_known_fiction_story(title, language, word_count=300):
-    print(f"Generating known fiction story for {title} for language {language}")
+    print(f"Generating known fiction story for {
+          title} for language {language}")
     return chain_of_thought([
-        f'Do you know the {language_to_country_adjective[language]} story of "{title}"?',
-        f'Write an English version of this story for language learners. It should be around {word_count} words long. Do not explain the moral. Do not mention {language_to_country[language]}.',
+        f'Do you know the {
+            language_to_country_adjective[language]} story of "{title}"?',
+        f'Write an English version of this story for language learners. It should be around {
+            word_count} words long. Do not explain the moral. Do not mention {language_to_country[language]}.',
         "Put every sentence in a new line.",
     ])
+
 
 def generate_story_summary(content):
     prompt = f"""Write a summary of the following story in 50 words.

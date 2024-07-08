@@ -110,7 +110,7 @@ def clean_result_json(text, result_json, from_lang):
     if from_lang == "hi":
         for entry in result_json["sentence"]:
             entry["translation"] = entry.pop("dictionary_translation")
-            if entry["translation"] == entry["context_translation"]:
+            if "context_translation" in entry and entry["translation"] == entry["context_translation"]:
                 del entry["context_translation"]
             if "function" in entry:
                 entry["note"] = entry.pop("function").lower().replace("in this context it ", "")
