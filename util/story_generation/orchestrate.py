@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import random
 from util import db
 from util.dalle3 import get_img_url_fiction, get_img_url_non_fiction
@@ -155,8 +156,14 @@ def generate_and_save_summaries():
         update_story(story)
 
 
-def generate_and_save_article(lang, tag):
-    idea_json = generate_ideas_for_articles(lang, tag)
-    content_json = generate_non_fiction_story(idea_json["ideas"][0])
+def generate_and_save_article(lang, topic, tag):
+    content_json = generate_non_fiction_story(lang, topic, word_count=200)
     db.insert_story_content(
-        content_json["title"], content_json["article"], "Unknown", lang, tags=tag)
+        content_json["title"], content_json["article"], "Unknown", lang, tags="article,"+tag)
+
+
+def generate_and_save_articles(lang, tag):
+    idea_json = generate_ideas_for_articles(lang, tag)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        for idea in idea_json["ideas"]:
+            executor.submit(generate_and_save_article, lang, idea, tag)

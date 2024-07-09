@@ -393,7 +393,7 @@ def get_article_titles_for_language(language, tag):
         .table('stories') \
         .select("title") \
         .eq("targetLanguage", language) \
-        .like("title", f'%{tag}%') \
+        .like("tags", f'%{tag}%') \
         .execute()
     return response.data
 

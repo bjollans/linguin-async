@@ -189,21 +189,21 @@ def generate_ideas_for_collections(collectionNames, limit=10, language="hi", wor
     return single_chat_completion(prompt)
 
 
-def generate_non_fiction_story(topic, word_count=300):
+def generate_non_fiction_story(language, topic, word_count=200):
     # return chain_of_thought([
     #     f"What do you know about {topic}. Give me {word_count} words:",
     #     "Simplify the language to be at a second grader reading level.",
     #     "Put every sentence in a new line.",
     # ])
     return json.loads(chain_of_thought([
-        f'Write a article about {topic}. The article is meant of a fifth grade school book. Do not start with "Once upon a time". Make it about {word_count} words long.'+'Return it in JSON format like so: {"title":"...","article":"..."}',
-        'Update the formatting of the article. Every sentence should be in a new line. Keep the separation of paragraphs'
+        f'Write an article about {topic} (related to {language_to_country[language]}). The article is meant for a textbook for English language learners. The readers are very smart, so do not explain basic facts. Keep the language simple and the sentences short. The reading level should be Flesch–Kincaid 5th grade. Make it about {word_count} words long. Do not cover many topics and rather dive deeper into a single part. Do not be vague. Instead be specific.'+'Return it in JSON format like so: {"title":"...","article":"..."}',
+        'Update the formatting of the article. Every sentence should be in a new line. Group the lines into paragraphs'
     ], type="json_object"))
 
 
 def generate_ideas_for_articles(language, tag):
     article_titles = get_article_titles_for_language(language, tag)
-    prompt = f'I have a list of topics for {tag} texts for a fifth grade school book about {language_to_country[language]}. Give me 10 more. This is my current list {article_titles}. Give me the result in json format like this'+'`{ideas:["idea1",...]}`'
+    prompt = f'I have a list of topics for {tag} texts for a fifth grade school book about {language_to_country[language]}. Give me 5 more. The topics should be less general and more specific, like diving into one very specific part of {language_to_country_adjective[language]} {tag}. This is my current list {[x["title"] for x in article_titles]}. Return only the new ideas. Give me the result in json format like this'+'`{ideas:["idea1",...]}`'
     return json.loads(single_chat_completion(prompt, type="json_object"))
 
 
