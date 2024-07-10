@@ -47,6 +47,22 @@ def test_japanese_sentence_splits_5():
     assert_compound_does_not_exist("飛び跳ねて", result_json)
 
 
+def test_japanese_sentence_splits_6():
+    # Test because 抱きしめた was split into 抱きしめ and た
+    test_prompt = "ミアは大喜びでタマを抱きしめた。"
+    result_json = get_gpt_word_splits(test_prompt, "ja")
+    assert_property({"text": "抱きしめた"}, result_json)
+    assert_word_not_in_sentence("抱きしめ", result_json)
+    assert_word_not_in_sentence("た", result_json)
+
+
+def test_japanese_sentence_splits_7():
+    # Test because 近づいてきて contained づ as Kanji
+    test_prompt = "その翌日、浦島太郎が岸辺に座っていると、巨大な亀が近づいてきて、その親切に感謝した。"
+    result_json = get_gpt_word_splits(test_prompt, "ja")
+    assert_not_a_kanji("づ", result_json)
+
+
 
 def assert_kanji(text, kanji_text, on, kun, meaning, test_json):
     kanji_list = next(x["kanjis"] for x in test_json["sentence"] if x["text"] == text)
@@ -58,3 +74,10 @@ def assert_kanji(text, kanji_text, on, kun, meaning, test_json):
 
 def assert_no_kanjis(text, test_json):
     assert len([x for x in test_json["sentence"] if x["text"] == text and "kanjis" in x]) == 0
+
+
+def assert_not_a_kanji(text, test_json):
+    for translation in test_json["sentence"]:
+        if "kanjis" in translation:
+            for kanji in translation["kanjis"]:
+                assert kanji["text"] != text
