@@ -16,6 +16,6 @@ def update_story_images(query):
 def update_images_for_stories_without_images():
     stories = db.get_stories_done_without_images()
     for i, story in enumerate(stories):
-        print(f"Translating {story['id']}; {i+1}/{len(stories)}")
+        print(f"Updating Images {story['id']}; {i+1}/{len(stories)}")
         update_story_images({"id": story["id"]})
     return success

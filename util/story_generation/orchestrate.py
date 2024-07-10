@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import random
 from util import db
 from util.dalle3 import get_img_url_fiction, get_img_url_non_fiction
-from util.db import get_stories_by_language, get_stories_in_review, get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status, update_story
+from util.db import get_stories_by_language, get_stories_by_status_and_language, get_stories_in_review, get_story_by_id, get_story_by_title, insert_story_content, get_stories_by_status, set_story_status, update_story
 from util.file_utils import download_image_from_url
 from util.gpt.gpt import single_chat_completion
 from util.gpt.story_generation import clean_story, generate_ideas_for_articles, generate_ideas_for_collections, generate_known_fiction_story, generate_mini_story, generate_mini_story_by_committee, generate_mini_story_no_image_jul_2024, generate_mini_story_with_image_jul_2024, generate_non_fiction_story, generate_story_summary, is_story_good
@@ -105,8 +105,12 @@ def generate_content(title, idea, is_fiction=False, paragraph_count=3):
         print(f"Skipping content for {title} because sentences are too long")
 
 
-def generate_images_for_image_pending_stories():
-    stories = get_stories_by_status("Image Pending")
+def generate_images_for_image_pending_stories(language=None):
+    stories =[]
+    if language:
+        stories = get_stories_by_status_and_language("Image Pending", language)
+    else:
+        stories = get_stories_by_status("Image Pending")
     for i, story in enumerate(stories):
         print(f"Generating images for {story['id']}; {i+1}/{len(stories)}")
         generate_images_for_story(story["title"], is_fiction=True)
@@ -135,7 +139,7 @@ def generate_images_for_story(title, is_fiction=False, image_amount=3):
     for i in range(image_amount):
         print(f"Downloading image {i} for {title}")
         download_image_from_url(
-            img_urls[i], f"/Users/bernardjollans/Pictures/Linguin/GeneratedStoryImages/{title}_{i}.png")
+            img_urls[i], f"/Users/bernardjollans/projects/linguin/images/GeneratedStoryImages/{title}_{i}.png")
 
 
 def check_story_duplicates(language):

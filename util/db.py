@@ -112,6 +112,16 @@ def get_stories_by_status(status):
     return response.data
 
 
+def get_stories_by_status_and_language(status, language):
+    response = supabase \
+        .table('stories') \
+        .select("*") \
+        .eq("status", status) \
+        .eq("targetLanguage", language) \
+        .execute()
+    return response.data
+
+
 def get_stories_in_review():
     response = supabase \
         .table('stories') \
